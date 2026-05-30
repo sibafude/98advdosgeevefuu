@@ -91,13 +91,13 @@
     const HEIGHT = 1280;
     
     const LAYOUT = {
-        window: { x: 0, y: 1000, w: 720, h: 280 } 
+        window: { x: 0, y: 1000, w: 720, h: 280 },
+        // 常時表示されるシステムボタンの領域（四角い枠線を廃止、タップ判定のみ残す）
+        sysBtn: { x: 720 - 180, y: 1280 - 65, w: 140, h: 45 } 
     };
 
     // --- アセット管理 ---
     const imageCache = {};
-    
-    // 画像が読み込めなかった場合のフォールバック（仮画像）用URLリスト
     const fallbackImages = {
         "bg_gate": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nSchool+Gate+(720x1280)",
         "bg_office": "https://placehold.co/720x1280/3e2723/FFF?text=Background:\\nPrincipal+Office",
@@ -109,22 +109,15 @@
         "ui_panel": "https://placehold.co/720x280/000028/FFF?text=UI+Panel"
     };
 
-    // 初回画像の読み込み処理（アセットフォルダ優先）
     function loadInitialImages() {
         for (let key in fallbackImages) {
             const img = new Image();
-            // 1. まずは assets/images/ フォルダから読み込みを試みる
             img.src = `assets/images/${key}.png`;
-            img.onload = () => { 
-                imageCache[key] = img; 
-            };
+            img.onload = () => { imageCache[key] = img; };
             img.onerror = () => {
-                // 2. 失敗した場合は仮の画像（プレースホルダー）を読み込む
                 const fbImg = new Image();
                 fbImg.src = fallbackImages[key];
-                fbImg.onload = () => { 
-                    imageCache[key] = fbImg; 
-                };
+                fbImg.onload = () => { imageCache[key] = fbImg; };
             };
         }
     }
@@ -138,24 +131,20 @@
     let defaultBgmInterval = null;
     let currentNote = 0;
 
-    // アセットフォルダからBGMの読み込みを試みる
     function loadDefaultBGMFile() {
         const audio = new Audio(`assets/audio/bgm.mp3`);
         audio.oncanplaythrough = () => {
-            if (!customBgmAudio) { // 開発ツールで手動上書きされていなければセット
+            if (!customBgmAudio) {
                 customBgmAudio = audio;
                 customBgmAudio.loop = true;
                 customBgmAudio.volume = 0.5;
             }
         };
-        audio.onerror = () => {
-            // 読み込めない場合は無視（ピープー音が鳴る）
-        };
+        audio.onerror = () => {};
         audio.load();
     }
     loadDefaultBGMFile();
 
-    // 開発ツール：手動での画像読み込み（テスト差し替え用）
     document.getElementById('local-img-upload').addEventListener('change', (e) => {
         const files = e.target.files;
         for(let file of files) {
@@ -173,12 +162,10 @@
         }
     });
 
-    // 開発ツール：手動での音楽読み込み（テスト差し替え用）
     document.getElementById('local-audio-upload').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
         stopBGM();
-        
         const reader = new FileReader();
         reader.onload = (event) => {
             customBgmAudio = new Audio(event.target.result);
@@ -192,11 +179,8 @@
     function startBGM() {
         if (!audioCtx) audioCtx = new AudioContext();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-
         if (customBgmAudio) {
-            if (customBgmAudio.paused) {
-                customBgmAudio.play().catch(e => console.error(e));
-            }
+            if (customBgmAudio.paused) customBgmAudio.play().catch(e => console.error(e));
             isBgmPlaying = true;
         } else if (!isBgmPlaying) {
             isBgmPlaying = true;
@@ -271,8 +255,12 @@
         textIndex: 0,
         isTyping: false,
         uiVisible: true,
+        showCommands: false, 
+        sysBtnActive: false,
         buttons: [],
-        activeButtonIndex: -1
+        activeButtonIndex: -1,
+        lastLineEndX: 0, // 最後の文字の描画終了X座標
+        lastLineEndY: 0  // 最後の文字の描画終了Y座標
     };
 
     let lastFrameTime = Date.now();
@@ -291,8 +279,7 @@
             ],
             commands: [
                 { label: "見る", target: "look" },
-                { label: "話す", target: "talk" },
-                { label: "システム", action: "open_system" }
+                { label: "話す", target: "talk" }
             ]
         },
         "look": {
@@ -348,16 +335,7 @@
                 "冴島「あのお嬢ちゃんの言う通り、まずは依頼人に挨拶しに行くとするか。」"
             ],
             commands: [
-                { label: "移動する", target: "move" },
-                { label: "システム", action: "open_system" }
-            ]
-        },
-        "move": {
-            bgId: "bg_gate",
-            text: ["冴島「どこへ向かおうか……」"],
-            commands: [
-                { label: "学園長室", target: "office_enter" },
-                { label: "戻る", target: "start_after_talk" }
+                { label: "学園長室へ移動", target: "office_enter" }
             ]
         },
         "office_enter": {
@@ -370,8 +348,7 @@
                 "学園長「ええ。単刀直入に申し上げます。この学園の象徴である『時計塔』についてです。」"
             ],
             commands: [
-                { label: "話を聞く", target: "office_listen" },
-                { label: "システム", action: "open_system" }
+                { label: "話を聞く", target: "office_listen" }
             ]
         },
         "office_listen": {
@@ -385,8 +362,7 @@
             ],
             commands: [
                 { label: "図書室へ", target: "library_enter" },
-                { label: "時計塔へ", target: "clocktower_enter" },
-                { label: "システム", action: "open_system" }
+                { label: "時計塔へ", target: "clocktower_enter" }
             ]
         },
         "library_enter": {
@@ -524,11 +500,13 @@
             ],
             commands: [ { label: "To Be Continued...", target: "start" } ]
         },
+        // システムメニュー（テキストなし、ボタンのみで表示される）
         "system_menu": {
-            text: ["【システムメニュー】\n操作を選択してくれ。"],
+            text: [], 
             commands: [
                 { label: "セーブ", target: "sys_save" },
                 { label: "ロード", target: "sys_load" },
+                { label: "UI非表示", action: "hide_ui" },
                 { label: "開発ツール", action: "toggle_dev" },
                 { label: "戻る", action: "close_system" }
             ]
@@ -563,37 +541,47 @@
         
         if (scene.onLoad) scene.onLoad();
 
-        state.textPages = scene.text || [""];
-        state.currentPage = 0;
-        state.fullText = state.textPages[0];
-        state.displayedText = "";
-        state.textIndex = 0;
-        state.isTyping = true;
+        state.textPages = scene.text || [];
+        
+        if (state.textPages.length === 0 || (state.textPages.length === 1 && state.textPages[0] === "")) {
+            state.showCommands = true;
+            state.displayedText = "";
+            state.fullText = "";
+            state.isTyping = false;
+        } else {
+            state.showCommands = false;
+            state.currentPage = 0;
+            state.fullText = state.textPages[0];
+            state.displayedText = "";
+            state.textIndex = 0;
+            state.isTyping = true;
+        }
+        
         textTimer = 0;
-
         calculateButtons(scene.commands);
     }
 
+    // コマンド位置の間隔を狭め、より中央寄りに配置
     function calculateButtons(commands) {
         state.buttons = [];
-        if(!commands) return;
+        if(!commands || commands.length === 0) return;
         
-        const cols = 3; 
+        const cols = commands.length > 4 ? 3 : (commands.length > 1 ? 2 : 1);
         const rows = Math.ceil(commands.length / cols); 
         
-        const padX = 50; 
-        const padBottom = 35; 
-        const gapX = 20;
-        const gapY = 30; 
+        // 以前の padX=60, gapX=30 から中央寄りに引き締めるため余白を大きく、間隔を狭く調整
+        const padX = 120; 
+        const gapX = 15;
+        const gapY = 25; 
         
         const win = LAYOUT.window;
         
         const btnW = (win.w - (padX * 2) - (gapX * (cols - 1))) / cols;
-        const btnH = 30; 
+        const btnH = 50; 
         
         const startX = win.x + padX;
         const totalH = (btnH * rows) + (gapY * (rows - 1));
-        const startY = win.y + win.h - totalH - padBottom;
+        const startY = win.y + (win.h - totalH) / 2;
 
         commands.forEach((cmd, i) => {
             const col = i % cols;
@@ -645,9 +633,11 @@
         ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, drawW, drawH);
     }
 
-    function drawTextWrap(text, x, y, maxWidth, lineHeight) {
+    // 1文字ずつ回り込ませる際、最新のテキスト末尾の位置座標を保持する仕組みを追加
+    function drawTextAndGetEndPosition(text, x, y, maxWidth, lineHeight) {
         const lines = text.split('\n');
         let currentY = y;
+        let lastLineText = "";
 
         for (let i = 0; i < lines.length; i++) {
             let line = "";
@@ -664,8 +654,16 @@
                 }
             }
             ctx.fillText(line, x, currentY);
-            currentY += lineHeight;
+            lastLineText = line;
+            if (i < lines.length - 1) {
+                currentY += lineHeight;
+            }
         }
+        
+        // 描画終了時のXとYを計算
+        const lastLineMetrics = ctx.measureText(lastLineText);
+        state.lastLineEndX = x + lastLineMetrics.width;
+        state.lastLineEndY = currentY;
     }
 
     function draw() {
@@ -694,11 +692,12 @@
             drawCharacter(imageCache[visualScene.charId]);
         }
 
+        // 3. UI表示
         if (state.uiVisible) {
             const uiImg = imageCache["ui_panel"];
             const win = LAYOUT.window;
             
-            // 3. UI枠の描画
+            // ウィンドウ背景描画
             if (uiImg && uiImg.complete) {
                 ctx.drawImage(uiImg, win.x, win.y, win.w, win.h);
             } else {
@@ -709,42 +708,61 @@
                 ctx.strokeRect(win.x, win.y, win.w, win.h);
             }
 
-            // 4. メッセージテキスト描画
-            ctx.fillStyle = "#fff";
-            ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif"; 
-            ctx.textAlign = "left";
+            // 常時表示の「システム」ボタン（四角い縁取り枠を完全に廃止し文字表示のみにする）
+            const sysBtn = LAYOUT.sysBtn;
+            ctx.fillStyle = state.sysBtnActive ? "#ffeb3b" : "#ccc";
+            ctx.font = "bold 22px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
             ctx.shadowColor = "#000";
             ctx.shadowBlur = 4;
-
-            const textPadX = 40; 
-            const textPadY = 55; 
-            const lineHeight = 42; 
-            
-            drawTextWrap(state.displayedText, win.x + textPadX, win.y + textPadY, win.w - (textPadX * 2), lineHeight);
+            ctx.fillText("システム", sysBtn.x + sysBtn.w / 2, sysBtn.y + sysBtn.h / 2);
             ctx.shadowBlur = 0;
+            ctx.textBaseline = "alphabetic";
 
-            if (!state.isTyping) {
-                const hasNextPage = (state.currentPage < state.textPages.length - 1);
-                ctx.fillStyle = (Date.now() % 1000 < 500) ? (hasNextPage ? "#ff0" : "#fff") : "transparent";
-                ctx.fillText("▼", win.x + win.w - 55, win.y + win.h - 35);
-            }
 
-            // 5. コマンドボタン描画
-            state.buttons.forEach((btn, idx) => {
-                const isPressed = (state.activeButtonIndex === idx);
-                
-                ctx.fillStyle = isPressed ? "#ffeb3b" : "#fff"; 
-                ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
+            // モードに応じた描画（テキストモード or コマンドモード）
+            if (!state.showCommands) {
+                // ▼テキスト表示モード
+                ctx.fillStyle = "#fff";
+                ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif"; 
+                ctx.textAlign = "left";
                 ctx.shadowColor = "#000";
                 ctx.shadowBlur = 4;
+
+                const textPadX = 40; 
+                const textPadY = 55; 
+                const lineHeight = 42; 
                 
-                ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2);
-                
+                // テキストを描画しつつ、最後の文字の位置座標を更新
+                drawTextAndGetEndPosition(state.displayedText, win.x + textPadX, win.y + textPadY, win.w - (textPadX * 2), lineHeight);
                 ctx.shadowBlur = 0;
-                ctx.textBaseline = "alphabetic";
-            });
+
+                // テキストを読み終えたら「▼」を文字のすぐ後ろに連動して点滅表示
+                if (!state.isTyping) {
+                    ctx.fillStyle = (Date.now() % 1000 < 500) ? "#fff" : "transparent";
+                    ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+                    ctx.fillText("▼", state.lastLineEndX + 5, state.lastLineEndY);
+                }
+
+            } else {
+                // ▼コマンド表示モード
+                state.buttons.forEach((btn, idx) => {
+                    const isPressed = (state.activeButtonIndex === idx);
+                    
+                    ctx.fillStyle = isPressed ? "#ffeb3b" : "#fff"; 
+                    ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.shadowColor = "#000";
+                    ctx.shadowBlur = 4;
+                    
+                    ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2);
+                    
+                    ctx.shadowBlur = 0;
+                    ctx.textBaseline = "alphabetic";
+                });
+            }
         }
     }
 
@@ -753,7 +771,7 @@
         const dt = now - lastFrameTime;
         lastFrameTime = now;
 
-        if (state.isTyping) {
+        if (state.isTyping && !state.showCommands) {
             textTimer += dt;
             if (textTimer >= TEXT_SPEED) {
                 textTimer = 0;
@@ -803,44 +821,73 @@
 
         const pos = getPointerPos(e);
 
+        // UI非表示時は、画面のどこをタップしてもUI再表示
         if (!state.uiVisible) {
             state.uiVisible = true;
             return;
         }
 
-        if (pos.y < LAYOUT.window.y && !state.isTyping && state.currentPage === state.textPages.length - 1) {
-            state.uiVisible = false;
+        // 常時表示の「システム」ボタンの当たり判定
+        const sysBtn = LAYOUT.sysBtn;
+        if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
+            state.sysBtnActive = true;
             return;
         }
 
-        state.activeButtonIndex = -1;
-        for (let i = 0; i < state.buttons.length; i++) {
-            const btn = state.buttons[i];
-            if (pos.x >= btn.x && pos.x <= btn.x + btn.w && pos.y >= btn.y && pos.y <= btn.y + btn.h) {
-                state.activeButtonIndex = i;
-                return; 
+        // コマンド表示モードの場合
+        if (state.showCommands) {
+            state.activeButtonIndex = -1;
+            for (let i = 0; i < state.buttons.length; i++) {
+                const btn = state.buttons[i];
+                if (pos.x >= btn.x && pos.x <= btn.x + btn.w && pos.y >= btn.y && pos.y <= btn.y + btn.h) {
+                    state.activeButtonIndex = i;
+                    return; 
+                }
             }
-        }
-
-        if (state.isTyping) {
-            state.displayedText = state.fullText;
-            state.textIndex = state.fullText.length;
-            state.isTyping = false;
-        } 
-        else if (state.currentPage < state.textPages.length - 1) {
-            state.currentPage++;
-            state.fullText = state.textPages[state.currentPage];
-            state.displayedText = "";
-            state.textIndex = 0;
-            state.isTyping = true;
-            playSound('select');
+            
+            // コマンド表示中にUI以外（メッセージ枠やシステムボタン以外）をタップしたら非表示にする処理
+            if (pos.y < LAYOUT.window.y) {
+                state.uiVisible = false;
+            }
+        } else {
+            // テキスト表示モードの場合（文字送り・ページ送り）
+            if (state.isTyping) {
+                state.displayedText = state.fullText;
+                state.textIndex = state.fullText.length;
+                state.isTyping = false;
+            } 
+            else if (state.currentPage < state.textPages.length - 1) {
+                state.currentPage++;
+                state.fullText = state.textPages[state.currentPage];
+                state.displayedText = "";
+                state.textIndex = 0;
+                state.isTyping = true;
+                playSound('select');
+            }
+            else if (state.buttons.length > 0) {
+                // 最後のテキストを読み終えて、コマンドがある場合は「コマンド表示モード」へ移行
+                state.showCommands = true;
+                playSound('select');
+            }
         }
     });
 
     canvas.addEventListener('pointerup', (e) => {
         if (!state.uiVisible) return;
 
-        if (state.activeButtonIndex !== -1) {
+        // システムボタンのアクション実行
+        if (state.sysBtnActive) {
+            state.sysBtnActive = false;
+            playSound('select');
+            if (state.sceneId !== "system_menu") {
+                state.previousSceneId = state.sceneId;
+                loadScene("system_menu");
+            }
+            return;
+        }
+
+        // コマンドボタンのアクション実行
+        if (state.showCommands && state.activeButtonIndex !== -1) {
             const btn = state.buttons[state.activeButtonIndex];
             
             if(btn.label === "戻る") playSound('cancel');
@@ -858,10 +905,10 @@
                 }
                 loadScene(state.previousSceneId); 
             }
-            else if (btn.action === "open_system") {
-                state.previousSceneId = state.sceneId; 
-                loadScene("system_menu");
-            } 
+            else if (btn.action === "hide_ui") {
+                state.uiVisible = false;
+                loadScene(state.previousSceneId); 
+            }
             else if (btn.action === "close_system") {
                 loadScene(state.previousSceneId); 
             }
@@ -871,6 +918,7 @@
     });
 
     canvas.addEventListener('pointerleave', () => {
+        state.sysBtnActive = false;
         state.activeButtonIndex = -1;
     });
 

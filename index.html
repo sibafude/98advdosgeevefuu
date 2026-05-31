@@ -106,6 +106,7 @@
         "ch_homura": "https://placehold.co/400x800/e88/FFF?text=Character:\\nHomura+(400x800)",
         "ch_yui": "https://placehold.co/400x800/85a/FFF?text=Character:\\nYui+Tachibana",
         "ch_kenta": "https://placehold.co/400x800/585/FFF?text=Character:\\nKenta+Morishita",
+        "ch_principal": "https://placehold.co/400x800/444/FFF?text=Character:\\nPrincipal", // 理事長を追加
         "ui_panel": "https://placehold.co/720x280/000028/FFF?text=UI+Panel"
     };
 
@@ -340,6 +341,7 @@
         },
         "office_enter": {
             bgId: "bg_office", 
+            charId: "ch_principal", // 理事長（学園長）を表示
             text: [
                 "冴島「失礼します。今日からお世話になる実習生の冴島です。」",
                 "学園長「……お待ちしておりました、冴島さん。いえ、探偵殿と言った方がよいでしょうか。」",
@@ -353,6 +355,7 @@
         },
         "office_listen": {
             bgId: "bg_office",
+            charId: "ch_principal", // 理事長（学園長）を表示
             text: [
                 "冴島「『時計塔の悪魔』……でしたっけ。夕暮れ時になると不協和音が鳴り響くとか。」",
                 "学園長「はい。耳を塞ぎたくなるような音です。生徒たちは恐怖のあまり近づきません。」",
@@ -569,7 +572,6 @@
         const cols = commands.length > 4 ? 3 : (commands.length > 1 ? 2 : 1);
         const rows = Math.ceil(commands.length / cols); 
         
-        // 以前の padX=60, gapX=30 から中央寄りに引き締めるため余白を大きく、間隔を狭く調整
         const padX = 120; 
         const gapX = 15;
         const gapY = 25; 
@@ -633,7 +635,6 @@
         ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, drawW, drawH);
     }
 
-    // 1文字ずつ回り込ませる際、最新のテキスト末尾の位置座標を保持する仕組みを追加
     function drawTextAndGetEndPosition(text, x, y, maxWidth, lineHeight) {
         const lines = text.split('\n');
         let currentY = y;
@@ -660,7 +661,6 @@
             }
         }
         
-        // 描画終了時のXとYを計算
         const lastLineMetrics = ctx.measureText(lastLineText);
         state.lastLineEndX = x + lastLineMetrics.width;
         state.lastLineEndY = currentY;

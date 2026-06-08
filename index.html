@@ -92,7 +92,6 @@
     
     const LAYOUT = {
         window: { x: 0, y: 1000, w: 720, h: 280 },
-        // 常時表示されるシステムボタンの領域（四角い枠線を廃止、タップ判定のみ残す）
         sysBtn: { x: 720 - 180, y: 1280 - 65, w: 140, h: 45 } 
     };
 
@@ -261,8 +260,12 @@
         buttons: [],
         activeButtonIndex: -1,
         lastLineEndX: 0, 
-        lastLineEndY: 0  
+        lastLineEndY: 0,
+        flags: { sawHomura: false },
+        pendingLoadSceneId: null // ロード時の予約シーンID
     };
+
+    let stateBackup = null; // システムメニューに入る前の状態を保持するバックアップ
 
     let lastFrameTime = Date.now();
     let textTimer = 0;
@@ -276,40 +279,50 @@
             bgId: "bg_gate",
             text: [
                 "冴島「ここが聖蘭学園か。なかなか歴史のありそうな立派な門構えだな。」",
-                "冴島「今日から俺が、ここの歴史教師か……。\n柄じゃないが、依頼のためだ。気合を入れていくとするか。」"
+                "冴島「明日から俺が、ここの歴史教師か……。\n柄じゃないが、依頼のためだ。夕暮れ時の下見といくか。」"
             ],
+            nextScene: "start_commands"
+        },
+        "start_commands": {
+            bgId: "bg_gate",
+            text: [],
             commands: [
                 { label: "見る", target: "look" },
-                { label: "話す", target: "talk" }
+                { label: "話す", target: "talk_homura_menu", condition: () => state.flags.sawHomura }
             ]
         },
         "look": {
-            text: ["冴島「さて、まずは周辺の確認からだな……」"],
+            bgId: "bg_gate",
+            text: [],
             commands: [
                 { label: "校門", target: "look_gate" },
                 { label: "周囲", target: "look_around" },
-                { label: "戻る", target: "start" }
+                { label: "戻る", target: "start_commands" }
             ]
         },
         "look_gate": {
+            bgId: "bg_gate",
             text: [
                 "冴島「重厚なレンガ造りだ。歴史の重みを感じるね。」",
                 "冴島「俺の住んでるボロアパートとは大違いだ。少しだけ羨ましい気もするな。」"
             ],
-            commands: [ { label: "戻る", target: "start" } ]
+            nextScene: "look" 
         },
         "look_around": {
+            bgId: "bg_gate",
             text: [
                 "冴島「ん？ 門の脇に立っているのは……生徒だな。」",
                 "冴島「こっちをジロジロ見ているな。\n……寝癖でもついてるかな？ それとも、俺のネクタイのセンスが古すぎるか？」"
             ],
-            commands: [ { label: "戻る", target: "start" } ]
+            onLoad: () => { state.flags.sawHomura = true; }, 
+            nextScene: "look" 
         },
-        "talk": {
-            text: ["冴島「よし、少し話を聞いてみるか……」"],
+        "talk_homura_menu": {
+            bgId: "bg_gate",
+            text: [],
             commands: [
                 { label: "生徒", target: "talk_student" },
-                { label: "戻る", target: "start" }
+                { label: "戻る", target: "start_commands" }
             ]
         },
         "talk_student": {
@@ -317,17 +330,17 @@
             charId: "ch_homura",
             text: [
                 "ほむら「ちょっと、そこの不審者さん。\nさっきから門の前でウロウロして何してるんですか？ 通報しますよ？」",
-                "冴島「おっと、誤解しないでくれ。俺は今日からここに赴任する、新任の歴史教師の冴島だ。」",
+                "冴島「おっと、誤解しないでくれ。俺は明日からここに赴任する、新任の歴史教師の冴島だ。」",
                 "冴島「不審者なんて言われると傷つくぞ。これでも毎朝、鏡の前で爽やかな笑顔の練習をしてきたんだがな。」",
                 "ほむら「……全然爽やかじゃないです。」",
                 "ほむら「それに……あなたのその立ち居振る舞い。実習生としての『だらしなさ』を演じているようですが……」",
                 "ほむら「さっき私の足音を聞いた瞬間の、あなたの視線。一瞬で私の重心や手の動きを捉えた、異様にプロじみた目の配り方……」",
                 "ほむら「とても一般的な教員志望の学生には見えませんね。隠しきれない『鋭さ』が滲み出ています。」",
                 "冴島「（……おいおい、鋭すぎるお嬢ちゃんだな。こちらの警戒を一瞬で見抜くとは、大した観察眼じゃねーか）」",
-                "冴島「ははっ、ただの緊張だよ。初めて教壇に立つんだ、肩に力が入っているのさ。」",
+                "冴島「ははっ、ただの緊張だよ。明日初めて教壇に立つんだ、肩に力が入っているのさ。」",
                 "ほむら「……ふん、まあいいです。用事があるなら、さっさと学園長室へ行ってください。私は図書委員の仕事があるので。」"
             ],
-            commands: [ { label: "進む", target: "start_after_talk" } ]
+            nextScene: "start_after_talk"
         },
         "start_after_talk": {
             bgId: "bg_gate",
@@ -335,6 +348,11 @@
                 "冴島「やれやれ、いきなり肝を冷やしたぜ。」",
                 "冴島「あのお嬢ちゃんの言う通り、まずは依頼人に挨拶しに行くとするか。」"
             ],
+            nextScene: "start_after_talk_commands"
+        },
+        "start_after_talk_commands": {
+            bgId: "bg_gate",
+            text: [],
             commands: [
                 { label: "学園長室へ移動", target: "office_enter" }
             ]
@@ -343,12 +361,18 @@
             bgId: "bg_office", 
             charId: "ch_principal", 
             text: [
-                "冴島「失礼します。今日からお世話になる実習生の冴島です。」",
+                "冴島「失礼します。明日からお世話になる実習生の冴島です。」",
                 "学園長「……お待ちしておりました、冴島さん。いえ、探偵殿と言った方がよいでしょうか。」",
                 "冴島「ここではただの実習生でお願いしますよ。俺も目立ちたくはないんでね。」",
                 "冴島「それで……電話で伺った依頼の件ですが。」",
                 "学園長「ええ。単刀直入に申し上げます。この学園の象徴である『時計塔』についてです。」"
             ],
+            nextScene: "office_listen_commands" 
+        },
+        "office_listen_commands": {
+            bgId: "bg_office",
+            charId: "ch_principal",
+            text: [],
             commands: [
                 { label: "話を聞く", target: "office_listen" }
             ]
@@ -363,6 +387,12 @@
                 "冴島「音が鳴るタイミングで本が消える……。なるほど、悪魔の仕業に見せかけた、巧妙な泥棒ってわけだ。」",
                 "学園長「警察沙汰になれば学園の評判に関わります。どうか極秘裏に真相を暴き、本を取り戻してください。」"
             ],
+            nextScene: "office_move_commands"
+        },
+        "office_move_commands": {
+            bgId: "bg_office",
+            charId: "ch_principal",
+            text: [],
             commands: [
                 { label: "図書室へ", target: "library_enter" },
                 { label: "時計塔へ", target: "clocktower_enter" }
@@ -374,10 +404,15 @@
                 "冴島「ここが噂の図書室か。古い紙とインクの匂いが充満してやがる。」",
                 "冴島「さて、消えた本の周辺をじっくり調べてみるか……。」"
             ],
+            nextScene: "library_commands"
+        },
+        "library_commands": {
+            bgId: "bg_library",
+            text: [],
             commands: [
                 { label: "本棚を調べる", target: "library_bookshelf" },
                 { label: "窓際を調べる", target: "library_window" },
-                { label: "戻る", target: "office_listen" }
+                { label: "戻る", target: "office_move_commands" } 
             ]
         },
         "library_bookshelf": {
@@ -387,7 +422,7 @@
                 "冴島「……ん？ 棚の隙間に、わずかだが黒い繊維のようなものが落ちている。」",
                 "冴島「制服の切れ端か？ いや、これはもっと硬い……作業用の手袋の繊維か。」"
             ],
-            commands: [ { label: "戻る", target: "library_enter" } ]
+            nextScene: "library_commands" 
         },
         "library_window": {
             bgId: "bg_library",
@@ -395,7 +430,7 @@
                 "冴島「窓の鍵はしっかり閉まっている。外から侵入した形跡はないな。」",
                 "冴島「だが、窓枠のレールに不自然な擦り傷がある。何か細い糸状のものを引き込んだような……。」"
             ],
-            commands: [ { label: "戻る", target: "library_enter" } ]
+            nextScene: "library_commands" 
         },
         "clocktower_enter": {
             bgId: "bg_clocktower", 
@@ -403,6 +438,11 @@
                 "冴島「ここが時計塔の入り口か。立派なアンティーク調の扉だが、しっかりと鍵がかかっているな。」",
                 "冴島「ん……？ 誰か近づいてくるな。」"
             ],
+            nextScene: "clocktower_enter_commands"
+        },
+        "clocktower_enter_commands": {
+            bgId: "bg_clocktower",
+            text: [],
             commands: [
                 { label: "物陰に隠れる", target: "clocktower_hide" },
                 { label: "そのまま待つ", target: "clocktower_wait" }
@@ -418,6 +458,12 @@
                 "冴島「おっと失礼、散歩がてら時計塔を見上げていた実習生の冴島です。」",
                 "橘「実習生？……だらしない身なりね。用がないなら速やかに立ち去りなさい。ここは大人の入る場所ではありません。」"
             ],
+            nextScene: "clocktower_hide_commands"
+        },
+        "clocktower_hide_commands": {
+            bgId: "bg_clocktower",
+            charId: "ch_yui",
+            text: [],
             commands: [ { label: "橘に話を聞く", target: "talk_yui" } ]
         },
         "clocktower_wait": {
@@ -425,11 +471,17 @@
             charId: "ch_yui",
             text: [
                 "？？？「あら、見慣れない顔ね。そこで何をしているの？」",
-                "冴島「今日からお世話になる歴史の実習生、冴島です。時計塔が綺麗だったので見とれていまして。」",
+                "冴島「明日からお世話になる歴史の実習生、冴島です。時計塔が綺麗だったので見とれていまして。」",
                 "橘「私は副学園長の橘結衣です。実習生としての自覚が足りないようね。用がないなら持ち場に戻りなさい。」",
                 "冴島「橘先生、この時計塔って普段は誰が管理してるんですか？」",
-                "橘「私と、用務員の森下よ。これ以上詮責する必要はありません。早く行きなさい。」"
+                "橘「私と、用務員の森下よ。これ以上詮索する必要はありません。早く行きなさい。」"
             ],
+            nextScene: "clocktower_wait_commands"
+        },
+        "clocktower_wait_commands": {
+            bgId: "bg_clocktower",
+            charId: "ch_yui",
+            text: [],
             commands: [ { label: "立ち去る", target: "clocktower_post_yui" } ]
         },
         "talk_yui": {
@@ -441,6 +493,12 @@
                 "橘「これ以上、不穏な動きをするなら、実習を即刻打ち切らせます。お引き取りを。」",
                 "冴島「（なるほど。時計塔の鍵を持つの橘結衣。かなりの高圧的態度……容疑者筆頭だな）」"
             ],
+            nextScene: "talk_yui_commands"
+        },
+        "talk_yui_commands": {
+            bgId: "bg_clocktower",
+            charId: "ch_yui",
+            text: [],
             commands: [ { label: "周辺を調べる", target: "clocktower_post_yui" } ]
         },
         "clocktower_post_yui": {
@@ -448,10 +506,15 @@
             text: [
                 "冴島「橘副学園長が立ち去ったな。さて、もう少し周囲を調べてみるか。」"
             ],
+            nextScene: "clocktower_post_yui_commands"
+        },
+        "clocktower_post_yui_commands": {
+            bgId: "bg_clocktower",
+            text: [],
             commands: [
                 { label: "用務員に話を聞く", target: "talk_kenta" },
                 { label: "扉を調べる", target: "clocktower_door" },
-                { label: "戻る", target: "office_listen" }
+                { label: "戻る", target: "office_move_commands" }
             ]
         },
         "talk_kenta": {
@@ -466,9 +529,15 @@
                 "森下「用もないのに時計の裏の機械をじっと見てるんだ。何を企んでるんだか……。」",
                 "冴島「（ハトが騒ぐのは超音波のせい、そして時計塔に入り浸る橘結衣……。役者が揃ってきたぜ。）」"
             ],
+            nextScene: "talk_kenta_commands"
+        },
+        "talk_kenta_commands": {
+            bgId: "bg_clocktower",
+            charId: "ch_kenta",
+            text: [],
             commands: [
                 { label: "推理する", target: "deduction" },
-                { label: "戻る", target: "clocktower_post_yui" }
+                { label: "戻る", target: "clocktower_post_yui_commands" }
             ]
         },
         "clocktower_door": {
@@ -476,7 +545,7 @@
             text: [
                 "冴島「鍵穴にやはり新しい傷がある。森下さんが合鍵を持っているとしても、彼が泥棒の犯人なのか、それとも……？」"
             ],
-            commands: [ { label: "戻る", target: "clocktower_post_yui" } ]
+            nextScene: "clocktower_post_yui_commands"
         },
         "deduction": {
             bgId: "bg_clocktower",
@@ -486,9 +555,14 @@
                 "冴島「そして、生徒が音を避けている間に、図書室の窓に仕掛けた細いピアノ線を使って……内部から本を抜き取った。」",
                 "冴島「犯人が誰にせよ、まもなく夕暮れ。発振器の作動を確認しに、犯人が時計塔に戻ってくるはずだ。」"
             ],
+            nextScene: "deduction_commands"
+        },
+        "deduction_commands": {
+            bgId: "bg_clocktower",
+            text: [],
             commands: [
                 { label: "犯人を待ち伏せる", target: "ambush" },
-                { label: "もう少し調べる", target: "clocktower_post_yui" }
+                { label: "もう少し調べる", target: "clocktower_post_yui_commands" }
             ]
         },
         "ambush": {
@@ -501,9 +575,14 @@
                 "ほむら「私も図書委員として、本を盗んだ犯人の顔を見ておきたいんです。邪魔はしませんから。」",
                 "冴島「……やれやれ、頑固なお嬢ちゃんだ。足音を忍ばせな。来るぜ……」"
             ],
+            nextScene: "ambush_commands"
+        },
+        "ambush_commands": {
+            bgId: "bg_clocktower",
+            charId: "ch_homura",
+            text: [],
             commands: [ { label: "To Be Continued...", target: "start" } ]
         },
-        // システムメニュー（テキストなし、ボタンのみで表示される）
         "system_menu": {
             text: [], 
             commands: [
@@ -524,7 +603,7 @@
             onLoad: () => { 
                 const saved = localStorage.getItem("seiran_save_data");
                 if(saved && scenario[saved]) {
-                    state.previousSceneId = saved;
+                    state.pendingLoadSceneId = saved;
                 } else {
                     scenario["sys_load"].text = ["悪いな、セーブデータが見当たらないようだ。"];
                 }
@@ -564,13 +643,55 @@
         calculateButtons(scene.commands);
     }
 
-    // コマンド位置の間隔を狭め、より中央寄りに配置
+    // システムメニューの開閉と状態バックアップ
+    function openSystemMenu() {
+        state.previousSceneId = state.sceneId;
+        // 開く直前の状態を丸ごとバックアップ
+        stateBackup = {
+            sceneId: state.sceneId,
+            textPages: state.textPages,
+            currentPage: state.currentPage,
+            displayedText: state.displayedText,
+            fullText: state.fullText,
+            textIndex: state.textIndex,
+            isTyping: state.isTyping,
+            showCommands: state.showCommands,
+            buttons: state.buttons,
+            lastLineEndX: state.lastLineEndX,
+            lastLineEndY: state.lastLineEndY
+        };
+        loadScene("system_menu");
+    }
+
+    function closeSystemMenu() {
+        if (stateBackup) {
+            // バックアップから完全に状態を復元（続きから再開される）
+            state.sceneId = stateBackup.sceneId;
+            state.textPages = stateBackup.textPages;
+            state.currentPage = stateBackup.currentPage;
+            state.displayedText = stateBackup.displayedText;
+            state.fullText = stateBackup.fullText;
+            state.textIndex = stateBackup.textIndex;
+            state.isTyping = stateBackup.isTyping;
+            state.showCommands = stateBackup.showCommands;
+            state.buttons = stateBackup.buttons;
+            state.lastLineEndX = stateBackup.lastLineEndX;
+            state.lastLineEndY = stateBackup.lastLineEndY;
+            stateBackup = null;
+        } else {
+            loadScene(state.previousSceneId);
+        }
+    }
+
     function calculateButtons(commands) {
         state.buttons = [];
         if(!commands || commands.length === 0) return;
         
-        const cols = commands.length > 4 ? 3 : (commands.length > 1 ? 2 : 1);
-        const rows = Math.ceil(commands.length / cols); 
+        const validCommands = commands.filter(cmd => !cmd.condition || cmd.condition());
+        if(validCommands.length === 0) return;
+        
+        const cols = validCommands.length > 4 ? 3 : (validCommands.length > 1 ? 2 : 1);
+        const rows = Math.ceil(validCommands.length / cols); 
         
         const padX = 120; 
         const gapX = 15;
@@ -585,7 +706,7 @@
         const totalH = (btnH * rows) + (gapY * (rows - 1));
         const startY = win.y + (win.h - totalH) / 2;
 
-        commands.forEach((cmd, i) => {
+        validCommands.forEach((cmd, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
             state.buttons.push({
@@ -708,7 +829,7 @@
                 ctx.strokeRect(win.x, win.y, win.w, win.h);
             }
 
-            // 常時表示の「システム」ボタン（四角い縁取り枠を完全に廃止し文字表示のみにする）
+            // 常時表示の「システム」ボタン（文字のみ）
             const sysBtn = LAYOUT.sysBtn;
             ctx.fillStyle = state.sysBtnActive ? "#ffeb3b" : "#ccc";
             ctx.font = "bold 22px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
@@ -721,7 +842,7 @@
             ctx.textBaseline = "alphabetic";
 
 
-            // モードに応じた描画（テキストモード or コマンドモード）
+            // モードに応じた描画
             if (!state.showCommands) {
                 // ▼テキスト表示モード
                 ctx.fillStyle = "#fff";
@@ -734,11 +855,9 @@
                 const textPadY = 55; 
                 const lineHeight = 42; 
                 
-                // テキストを描画しつつ、最後の文字の位置座標を更新
                 drawTextAndGetEndPosition(state.displayedText, win.x + textPadX, win.y + textPadY, win.w - (textPadX * 2), lineHeight);
                 ctx.shadowBlur = 0;
 
-                // テキストを読み終えたら「▼」を文字のすぐ後ろに連動して点滅表示
                 if (!state.isTyping) {
                     ctx.fillStyle = (Date.now() % 1000 < 500) ? "#fff" : "transparent";
                     ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
@@ -821,20 +940,17 @@
 
         const pos = getPointerPos(e);
 
-        // UI非表示時は、画面のどこをタップしてもUI再表示
         if (!state.uiVisible) {
             state.uiVisible = true;
             return;
         }
 
-        // 常時表示の「システム」ボタンの当たり判定
         const sysBtn = LAYOUT.sysBtn;
         if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
             state.sysBtnActive = true;
             return;
         }
 
-        // コマンド表示モードの場合
         if (state.showCommands) {
             state.activeButtonIndex = -1;
             for (let i = 0; i < state.buttons.length; i++) {
@@ -845,12 +961,11 @@
                 }
             }
             
-            // コマンド表示中にUI以外（メッセージ枠やシステムボタン以外）をタップしたら非表示にする処理
+            // コマンド待ちの時にUI以外をタップで非表示トグル
             if (pos.y < LAYOUT.window.y) {
                 state.uiVisible = false;
             }
         } else {
-            // テキスト表示モードの場合（文字送り・ページ送り）
             if (state.isTyping) {
                 state.displayedText = state.fullText;
                 state.textIndex = state.fullText.length;
@@ -865,8 +980,11 @@
                 playSound('select');
             }
             else if (state.buttons.length > 0) {
-                // 最後のテキストを読み終えて、コマンドがある場合は「コマンド表示モード」へ移行
                 state.showCommands = true;
+                playSound('select');
+            }
+            else if (scenario[state.sceneId].nextScene) {
+                loadScene(scenario[state.sceneId].nextScene);
                 playSound('select');
             }
         }
@@ -875,18 +993,29 @@
     canvas.addEventListener('pointerup', (e) => {
         if (!state.uiVisible) return;
 
-        // システムボタンのアクション実行
+        // システムボタントグル処理
         if (state.sysBtnActive) {
             state.sysBtnActive = false;
             playSound('select');
-            if (state.sceneId !== "system_menu") {
-                state.previousSceneId = state.sceneId;
-                loadScene("system_menu");
+            
+            // すでにシステムメニューを開いている場合は閉じる（戻る）
+            if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
+                if (state.pendingLoadSceneId) {
+                    let id = state.pendingLoadSceneId;
+                    state.pendingLoadSceneId = null;
+                    stateBackup = null;
+                    loadScene(id);
+                } else {
+                    closeSystemMenu();
+                }
+            } else {
+                // システムメニューを開く
+                openSystemMenu();
             }
             return;
         }
 
-        // コマンドボタンのアクション実行
+        // コマンド実行処理
         if (state.showCommands && state.activeButtonIndex !== -1) {
             const btn = state.buttons[state.activeButtonIndex];
             
@@ -903,14 +1032,21 @@
                 } else {
                     devTools.style.display = "none";
                 }
-                loadScene(state.previousSceneId); 
+                closeSystemMenu(); 
             }
             else if (btn.action === "hide_ui") {
                 state.uiVisible = false;
-                loadScene(state.previousSceneId); 
+                closeSystemMenu(); 
             }
             else if (btn.action === "close_system") {
-                loadScene(state.previousSceneId); 
+                if (state.pendingLoadSceneId) {
+                    let id = state.pendingLoadSceneId;
+                    state.pendingLoadSceneId = null;
+                    stateBackup = null;
+                    loadScene(id);
+                } else {
+                    closeSystemMenu(); 
+                }
             }
             
             state.activeButtonIndex = -1;

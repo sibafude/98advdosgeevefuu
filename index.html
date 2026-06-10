@@ -102,6 +102,7 @@
         "bg_office": "https://placehold.co/720x1280/3e2723/FFF?text=Background:\\nPrincipal+Office",
         "bg_library": "https://placehold.co/720x1280/2e2b20/FFF?text=Background:\\nLibrary",
         "bg_clocktower": "https://placehold.co/720x1280/1c2331/FFF?text=Background:\\nClock+Tower",
+        "bg_classroom": "https://placehold.co/720x1280/5d4037/FFF?text=Background:\\nClassroom", // 教室を追加
         "ch_homura": "https://placehold.co/400x800/e88/FFF?text=Character:\\nHomura+(400x800)",
         "ch_yui": "https://placehold.co/400x800/85a/FFF?text=Character:\\nYui+Tachibana",
         "ch_kenta": "https://placehold.co/400x800/585/FFF?text=Character:\\nKenta+Morishita",
@@ -262,10 +263,10 @@
         lastLineEndX: 0, 
         lastLineEndY: 0,
         flags: { sawHomura: false },
-        pendingLoadSceneId: null // ロード時の予約シーンID
+        pendingLoadSceneId: null 
     };
 
-    let stateBackup = null; // システムメニューに入る前の状態を保持するバックアップ
+    let stateBackup = null; 
 
     let lastFrameTime = Date.now();
     let textTimer = 0;
@@ -331,13 +332,9 @@
             text: [
                 "ほむら「ちょっと、そこの不審者さん。\nさっきから門の前でウロウロして何してるんですか？ 通報しますよ？」",
                 "冴島「おっと、誤解しないでくれ。俺は明日からここに赴任する、新任の歴史教師の冴島だ。」",
-                "冴島「不審者なんて言われると傷つくぞ。これでも毎朝、鏡の前で爽やかな笑顔の練習をしてきたんだがな。」",
-                "ほむら「……全然爽やかじゃないです。」",
-                "ほむら「それに……あなたのその立ち居振る舞い。実習生としての『だらしなさ』を演じているようですが……」",
-                "ほむら「さっき私の足音を聞いた瞬間の、あなたの視線。一瞬で私の重心や手の動きを捉えた、異様にプロじみた目の配り方……」",
-                "ほむら「とても一般的な教員志望の学生には見えませんね。隠しきれない『鋭さ』が滲み出ています。」",
-                "冴島「（……おいおい、鋭すぎるお嬢ちゃんだな。こちらの警戒を一瞬で見抜くとは、大した観察眼じゃねーか）」",
-                "冴島「ははっ、ただの緊張だよ。明日初めて教壇に立つんだ、肩に力が入っているのさ。」",
+                "ほむら「明日からの先生……？ うーん、それにしては少し怪しい雰囲気ですけど。」",
+                "ほむら「ふと見せる目つきが、普通の教員志望の学生には見えませんね。何か隠しきれない鋭さを感じます。」",
+                "冴島「ははっ、ただ緊張しているだけだよ。明日初めて教壇に立つからね、肩に力が入っているのさ。」",
                 "ほむら「……ふん、まあいいです。用事があるなら、さっさと学園長室へ行ってください。私は図書委員の仕事があるので。」"
             ],
             nextScene: "start_after_talk"
@@ -364,7 +361,7 @@
                 "冴島「失礼します。明日からお世話になる実習生の冴島です。」",
                 "学園長「……お待ちしておりました、冴島さん。いえ、探偵殿と言った方がよいでしょうか。」",
                 "冴島「ここではただの実習生でお願いしますよ。俺も目立ちたくはないんでね。」",
-                "冴島「それで……電話で伺った依頼の件ですが。」",
+                "冴島「それで……電話で伺った依頼 of 聖蘭の件ですが。」",
                 "学園長「ええ。単刀直入に申し上げます。この学園の象徴である『時計塔』についてです。」"
             ],
             nextScene: "office_listen_commands" 
@@ -575,14 +572,92 @@
                 "ほむら「私も図書委員として、本を盗んだ犯人の顔を見ておきたいんです。邪魔はしませんから。」",
                 "冴島「……やれやれ、頑固なお嬢ちゃんだ。足音を忍ばせな。来るぜ……」"
             ],
-            nextScene: "ambush_commands"
+            nextScene: "culprit_appears"
         },
-        "ambush_commands": {
+        "culprit_appears": {
             bgId: "bg_clocktower",
+            text: [
+                "カチャ……カチャ……と、重々しい静寂の中に鍵を回す細い金属音が響く。",
+                "ゆっくりと時計塔の扉が開き、人影が内部へ滑り込んでいく……。",
+                "冴島「（やはり来たか。足音を立てずに踏み込むぞ……！）」"
+            ],
+            nextScene: "culprit_appears_commands"
+        },
+        "culprit_appears_commands": {
+            bgId: "bg_clocktower",
+            text: [],
+            commands: [
+                { label: "踏み込む", target: "confrontation" }
+            ]
+        },
+        "confrontation": {
+            bgId: "bg_clocktower",
+            charId: "ch_yui",
+            text: [
+                "冴島「そこまでだ、橘副学園長。」",
+                "橘「っ！？ ……だ、誰ですか、人の見学を邪魔する不審者は！」",
+                "冴島「見学にしちゃあ、手荷物が随分と物騒ですね。そのバッグから覗いているのは……盗まれた閉架書庫の古書、そして超音波の発振器ですね？」",
+                "橘「なんのことですか！ 私はただ、時計の機械トラブルを点検しに……」"
+            ],
+            nextScene: "confrontation_commands"
+        },
+        "confrontation_commands": {
+            bgId: "bg_clocktower",
+            charId: "ch_yui",
+            text: [],
+            commands: [
+                { label: "問い詰める", target: "truth_revealed" }
+            ]
+        },
+        "truth_revealed": {
+            bgId: "bg_clocktower",
+            charId: "ch_yui",
+            text: [
+                "冴島「往生際が悪いな。あんたは夕暮れ時になると時計塔で超音波発振器を作動させた。」",
+                "冴島「高周波を嫌うハトが騒ぎ立ち、同時に頭痛を覚えた生徒たちがこの周辺から避難する。」",
+                "冴島「その隙に、あらかじめ図書室の窓に仕込んでおいた極細のピアノ線を使い、閉架書庫からターゲットの古書を釣り上げた……。これが『時計塔の悪魔』の手品だ。」",
+                "冴島「すべては、この学園が建てられる前にあった古い屋敷の、隠し財産の地図を手に入れるためだな？」",
+                "橘「くっ……！ まさか、ただのしがない歴史実習生に、ここまで見破られるなんて……。」",
+                "橘「ええ、その通りよ。この学園の古い歴史の裏には、隠された財産がある。それを手に入れれば、学園の利権をすべて私のものにできたのに……！」",
+                "冴島「悪いな。あんたの悪魔のショーは、これでおしまいだ。」"
+            ],
+            nextScene: "truth_commands"
+        },
+        "truth_commands": {
+            bgId: "bg_clocktower",
+            charId: "ch_yui",
+            text: [],
+            commands: [
+                { label: "事件解決", target: "ending" }
+            ]
+        },
+        "ending": {
+            bgId: "bg_classroom", 
+            charId: "ch_homura",
+            text: [
+                "翌日。晴れ渡る青空の下、冴島は教壇に立っていた。",
+                "冴島「よし、今日の日本史の講義はここまでだ。質問は……ないな？」",
+                "終会のベルが鳴り、生徒たちが教室を去っていく中、ほむらだけが席に残っていた。",
+                "ほむら「冴島先生。……いえ、探偵の冴島さん。」",
+                "冴島「おっと、教卓の前では先生と呼んでくれよ、お嬢ちゃん。」",
+                "ほむら「ふふ、お見事でした。まさか本当に一晩で解決してしまうなんて。」",
+                "ほむら「でも、事件が解決したなら、あなたの『実習』も今日で終わりですね。少し退屈になりそうです。」",
+                "冴島「まあな。俺はやっぱり、安タバコとボロアパートの生活が似合ってるのさ。」",
+                "ほむら「……次は、いつそちらの探偵事務所へ遊びに行きましょうか？」",
+                "冴島「はは、歓迎するよ。……鋭すぎる助手さん。」",
+                "学園の時計塔が、今度は澄み切った、美しい鐘の音を響かせた――"
+            ],
+            nextScene: "ending_commands"
+        },
+        "ending_commands": {
+            bgId: "bg_classroom",
             charId: "ch_homura",
             text: [],
-            commands: [ { label: "To Be Continued...", target: "start" } ]
+            commands: [
+                { label: "タイトルへ戻る", target: "start" }
+            ]
         },
+        // システムメニュー
         "system_menu": {
             text: [], 
             commands: [
@@ -643,10 +718,8 @@
         calculateButtons(scene.commands);
     }
 
-    // システムメニューの開閉と状態バックアップ
     function openSystemMenu() {
         state.previousSceneId = state.sceneId;
-        // 開く直前の状態を丸ごとバックアップ
         stateBackup = {
             sceneId: state.sceneId,
             textPages: state.textPages,
@@ -665,7 +738,6 @@
 
     function closeSystemMenu() {
         if (stateBackup) {
-            // バックアップから完全に状態を復元（続きから再開される）
             state.sceneId = stateBackup.sceneId;
             state.textPages = stateBackup.textPages;
             state.currentPage = stateBackup.currentPage;
@@ -961,7 +1033,6 @@
                 }
             }
             
-            // コマンド待ちの時にUI以外をタップで非表示トグル
             if (pos.y < LAYOUT.window.y) {
                 state.uiVisible = false;
             }
@@ -993,12 +1064,10 @@
     canvas.addEventListener('pointerup', (e) => {
         if (!state.uiVisible) return;
 
-        // システムボタントグル処理
         if (state.sysBtnActive) {
             state.sysBtnActive = false;
             playSound('select');
             
-            // すでにシステムメニューを開いている場合は閉じる（戻る）
             if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
                 if (state.pendingLoadSceneId) {
                     let id = state.pendingLoadSceneId;
@@ -1009,13 +1078,11 @@
                     closeSystemMenu();
                 }
             } else {
-                // システムメニューを開く
                 openSystemMenu();
             }
             return;
         }
 
-        // コマンド実行処理
         if (state.showCommands && state.activeButtonIndex !== -1) {
             const btn = state.buttons[state.activeButtonIndex];
             

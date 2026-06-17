@@ -73,7 +73,7 @@
     <div id="dev-tools">
         <span>🔧 <b>[読込]</b> 画像や音楽のテスト差し替え（assetsフォルダ優先）</span><br>
         🖼 画像: <input type="file" id="local-img-upload" accept="image/*" multiple><br>
-        🎵 音楽: <input type="file" id="local-audio-upload" accept="audio/*, .mp3, .wav, .m4a, .aac, .ogg"><br>
+        🎵 音楽: <input type="file" id="local-audio-upload" accept="audio/*, .mp3, .wav, .m4a, .aac, .ogg" multiple><br>
         <button onclick="document.getElementById('dev-tools').style.display='none'">閉じる</button>
     </div>
     
@@ -98,17 +98,19 @@
     // --- アセット管理 ---
     const imageCache = {};
     const fallbackImages = {
-        "bg_gate": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nSchool+Gate+(720x1280)",
+        "bg_gate": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nSchool+Gate+(Sunset)",
+        "bg_gate_morning": "https://placehold.co/720x1280/87ceeb/000?text=Background:\\nSchool+Gate+(Morning)", // 朝の校門
         "bg_office": "https://placehold.co/720x1280/3e2723/FFF?text=Background:\\nPrincipal+Office",
         "bg_library": "https://placehold.co/720x1280/2e2b20/FFF?text=Background:\\nLibrary",
         "bg_clocktower": "https://placehold.co/720x1280/1c2331/FFF?text=Background:\\nClock+Tower",
         "bg_classroom": "https://placehold.co/720x1280/5d4037/FFF?text=Background:\\nClassroom", 
-        "bg_warehouse": "https://placehold.co/720x1280/2c3e50/FFF?text=Background:\\nWarehouse+Office", // 探偵事務所（倉庫）を追加
+        "bg_warehouse": "https://placehold.co/720x1280/2c3e50/FFF?text=Background:\\nWarehouse+Office",
+        "ev_kidnap": "https://placehold.co/720x1280/0d1117/FFF?text=Event+CG:\\nKidnapping+(720x1280)",
         "ch_homura": "https://placehold.co/400x800/e88/FFF?text=Character:\\nHomura+(400x800)",
         "ch_yui": "https://placehold.co/400x800/85a/FFF?text=Character:\\nYui+Tachibana",
         "ch_kenta": "https://placehold.co/400x800/585/FFF?text=Character:\\nKenta+Morishita",
         "ch_principal": "https://placehold.co/400x800/444/FFF?text=Character:\\nPrincipal", 
-        "ch_shiori": "https://placehold.co/400x800/4a8/FFF?text=Character:\\nShiori", // 栞（親友）を追加
+        "ch_shiori": "https://placehold.co/400x800/4a8/FFF?text=Character:\\nShiori",
         "ui_panel": "https://placehold.co/720x280/000028/FFF?text=UI+Panel"
     };
 
@@ -129,24 +131,24 @@
     // --- BGM・効果音管理 ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
-    let customBgmAudio = null;
     let isBgmPlaying = false;
     let defaultBgmInterval = null;
     let currentNote = 0;
 
-    function loadDefaultBGMFile() {
-        const audio = new Audio(`assets/audio/bgm.mp3`);
-        audio.oncanplaythrough = () => {
-            if (!customBgmAudio) {
-                customBgmAudio = audio;
-                customBgmAudio.loop = true;
-                customBgmAudio.volume = 0.5;
-            }
-        };
-        audio.onerror = () => {};
-        audio.load();
+    // 複数BGM対応
+    const bgmAudios = {
+        "bgm": new Audio(`assets/audio/bgm.mp3`),
+        "bgm_tension": new Audio(`assets/audio/bgm_tension.mp3`)
+    };
+    
+    for (let key in bgmAudios) {
+        bgmAudios[key].loop = true;
+        bgmAudios[key].volume = 0.5;
+        bgmAudios[key].onerror = () => {}; 
     }
-    loadDefaultBGMFile();
+
+    let currentBgmKey = 'bgm';
+    let customBgmAudio = bgmAudios['bgm'];
 
     document.getElementById('local-img-upload').addEventListener('change', (e) => {
         const files = e.target.files;
@@ -165,18 +167,31 @@
         }
     });
 
+    // 複数音楽ファイルの読み込みと上書き
     document.getElementById('local-audio-upload').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        const files = e.target.files;
+        if (!files.length) return;
         stopBGM();
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            customBgmAudio = new Audio(event.target.result);
-            customBgmAudio.loop = true;
-            customBgmAudio.volume = 0.5;
-            if (hasInteracted) customBgmAudio.play().catch(err => console.log("再生待機"));
-        };
-        reader.readAsDataURL(file);
+        
+        for(let file of files) {
+            let id = file.name.toLowerCase();
+            const dotIndex = id.lastIndexOf('.');
+            if (dotIndex > 0) id = id.substring(0, dotIndex);
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const newAudio = new Audio(event.target.result);
+                newAudio.loop = true;
+                newAudio.volume = 0.5;
+                bgmAudios[id] = newAudio; 
+                
+                if (currentBgmKey === id || (currentBgmKey === 'bgm' && id === 'bgm')) {
+                    customBgmAudio = newAudio;
+                    if (hasInteracted) customBgmAudio.play().catch(err => console.log("再生待機"));
+                }
+            };
+            reader.readAsDataURL(file);
+        }
     });
 
     function startBGM() {
@@ -203,14 +218,19 @@
         }
     }
 
+    // デフォルトピープー音もシーンで雰囲気を変える
     function playDefaultBGM() {
         if (!audioCtx) return;
-        const notes = [220, 261.63, 329.63, 261.63, 220, 164.81]; 
+        const notesNormal = [220, 261.63, 329.63, 261.63, 220, 164.81]; 
+        const notesTension = [110, 116.54, 123.47]; // 低く不気味に
+        
         defaultBgmInterval = setInterval(() => {
-            if (!isBgmPlaying || customBgmAudio) return;
+            if (!isBgmPlaying || customBgmAudio.readyState >= 2) return; 
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'triangle';
+            osc.type = currentBgmKey === 'bgm_tension' ? 'sawtooth' : 'triangle';
+            const notes = currentBgmKey === 'bgm_tension' ? notesTension : notesNormal;
+            
             osc.frequency.value = notes[currentNote % notes.length];
             osc.connect(gain);
             gain.connect(audioCtx.destination);
@@ -219,7 +239,7 @@
             osc.start();
             osc.stop(audioCtx.currentTime + 0.25);
             currentNote++;
-        }, 300);
+        }, currentBgmKey === 'bgm_tension' ? 200 : 300);
     }
 
     function playSound(type) {
@@ -264,7 +284,8 @@
         activeButtonIndex: -1,
         lastLineEndX: 0, 
         lastLineEndY: 0,
-        flags: { sawHomura: false },
+        flags: {}, 
+        gameOverCount: 0, // ゲームオーバー回数
         pendingLoadSceneId: null 
     };
 
@@ -280,10 +301,15 @@
     const scenario = {
         "start": {
             bgId: "bg_gate",
+            bgm: "bgm",
             text: [
                 "冴島「ここが聖蘭学園か。なかなか歴史のありそうな立派な門構えだな。」",
                 "冴島「明日から俺が、ここの歴史教師か……。\n柄じゃないが、依頼のためだ。夕暮れ時の下見といくか。」"
             ],
+            onLoad: () => { 
+                // フラグはリセットするが、ゲームオーバー回数だけは維持する
+                state.flags = {}; 
+            },
             nextScene: "start_commands"
         },
         "start_commands": {
@@ -421,6 +447,7 @@
                 "冴島「……ん？ 棚の隙間に、わずかだが黒い繊維のようなものが落ちている。」",
                 "冴島「制服の切れ端か？ いや、これはもっと硬い……作業用の手袋の繊維か。」"
             ],
+            onLoad: () => { state.flags.checkedBookshelf = true; },
             nextScene: "library_commands" 
         },
         "library_window": {
@@ -429,6 +456,7 @@
                 "冴島「窓の鍵はしっかり閉まっている。外から侵入した形跡はないな。」",
                 "冴島「だが、窓枠のレールに不自然な擦り傷がある。何か細い糸状のものを引き込んだような……。」"
             ],
+            onLoad: () => { state.flags.checkedWindow = true; },
             nextScene: "library_commands" 
         },
         "clocktower_enter": {
@@ -535,15 +563,33 @@
             charId: "ch_kenta",
             text: [],
             commands: [
-                { label: "推理する", target: "deduction" },
+                { 
+                    label: "推理する", 
+                    target: "deduction", 
+                    condition: () => state.flags.checkedBookshelf && state.flags.checkedWindow && state.flags.checkedClockDoor 
+                },
+                { 
+                    label: "推理する", 
+                    target: "need_more_evidence", 
+                    condition: () => !(state.flags.checkedBookshelf && state.flags.checkedWindow && state.flags.checkedClockDoor) 
+                },
                 { label: "戻る", target: "clocktower_post_yui_commands" }
             ]
+        },
+        "need_more_evidence": {
+            bgId: "bg_clocktower",
+            text: [
+                "冴島「（いや、まだ断片的な情報ばかりだ。トリックを完全に暴くには、証拠がもっと必要だな……）」",
+                "冴島「（確か、消えた古書があった『図書室の本棚』と『窓際』、それにこの『時計塔の扉』を調べれば何か分かるはずだ。）」"
+            ],
+            nextScene: "clocktower_post_yui_commands"
         },
         "clocktower_door": {
             bgId: "bg_clocktower",
             text: [
                 "冴島「鍵穴にやはり新しい傷がある。森下さんが合鍵を持っているとしても、彼が泥棒の犯人なのか、それとも……？」"
             ],
+            onLoad: () => { state.flags.checkedClockDoor = true; },
             nextScene: "clocktower_post_yui_commands"
         },
         "deduction": {
@@ -633,7 +679,6 @@
                 { label: "事件解決", target: "ending" }
             ]
         },
-        // ===== ここから新章（護衛依頼編） =====
         "ending": {
             bgId: "bg_classroom", 
             charId: "ch_homura",
@@ -660,7 +705,7 @@
             ]
         },
         "office_warehouse": {
-            bgId: "bg_warehouse", // 探偵事務所（倉庫）
+            bgId: "bg_warehouse", 
             text: [
                 "冴島「ここが俺の城、冴島探偵事務所だ。見ての通り、古い港の倉庫を間借りして使ってる。」",
                 "冴島「隙間風は酷いが、誰の目にもつかないし、機材を置くには十分な広さでね。」",
@@ -686,7 +731,7 @@
         },
         "introduce_shiori": {
             bgId: "bg_warehouse",
-            charId: "ch_shiori", // 親友の栞
+            charId: "ch_shiori", 
             text: [
                 "栞「は、はじめまして……。水無月 栞（みなづき しおり）と申します。」",
                 "冴島「（眼鏡をかけた、大人しそうな子だな。ほむら嬢とは正反対のタイプに見えるが……）」",
@@ -734,9 +779,177 @@
             bgId: "bg_warehouse",
             text: [],
             commands: [
+                { label: "翌朝へ", target: "next_morning_greeting" }
+            ]
+        },
+        // ===== 朝の挨拶〜誘拐未遂イベント編 =====
+        "next_morning_greeting": {
+            bgId: "bg_gate_morning",
+            bgm: "bgm",
+            charId: "ch_homura",
+            text: [
+                "翌朝。俺は昨日の護衛依頼を受け、いつもより早く登校し、校門前で待ち構えていた。",
+                "ほむら「あ、冴島先生。おはようございます。」",
+                "冴島「おはよう。ほむら嬢、それに栞嬢も一緒か。朝から感心だな。」"
+            ],
+            nextScene: "next_morning_greeting_2"
+        },
+        "next_morning_greeting_2": {
+            bgId: "bg_gate_morning",
+            charId: "ch_shiori",
+            text: [
+                "栞「おはようございます……冴島先生。」",
+                "冴島「顔色が少し悪いな。昨日はよく眠れなかったか？」",
+                "栞「はい……。帰り道も、なんとなく誰かに見られているような気がして……。」",
+                "冴島「（やはり、奴らはもうすぐそこまで来ているな……。）」",
+                "冴島「心配するな。学園内なら俺も目を光らせておける。……ん？」"
+            ],
+            nextScene: "next_morning"
+        },
+        "next_morning": {
+            bgId: "ev_kidnap", 
+            bgm: "bgm_tension",    
+            text: [
+                "その時、猛スピードで黒いセダンが校門前に急停車し、中から黒服の男たちが飛び出してきた！",
+                "栞「きゃあっ！？」",
+                "ほむら「栞っ！？」",
+                "男「大人しくしろ！」",
+                "冴島「（まずい、力ずくで連れ去る気か！）」"
+            ],
+            nextScene: "next_morning_commands"
+        },
+        "next_morning_commands": {
+            bgId: "ev_kidnap",
+            text: [],
+            commands: [
+                { label: "男に飛び掛かる", target: "kidnap_success_1" },
+                { label: "車の前に立ち塞がる", target: "kidnap_fail_1" },
+                { label: "大声を出す", target: "kidnap_fail_2" }
+            ]
+        },
+        "kidnap_fail_1": {
+            bgId: "ev_kidnap",
+            text: [
+                "冴島「（車の前に出て、逃げ道を塞ぐ！）」",
+                "俺が道路に飛び出した瞬間、運転席の男が躊躇なくアクセルを踏み込んだ。",
+                "冴島「なっ……！？」",
+                "重い衝撃と共に俺の体は弾き飛ばされ、地面に叩きつけられた。薄れゆく意識の中で、走り去る車のスキール音だけが響いていた……。"
+            ],
+            nextScene: "game_over"
+        },
+        "kidnap_fail_2": {
+            bgId: "ev_kidnap",
+            text: [
+                "冴島「誰か！ 誘拐だ、警察を呼べ！！」",
+                "俺の大声に周囲の生徒たちは悲鳴を上げて逃げ惑うばかりだ。",
+                "その一瞬の躊躇が命取りだった。男たちは慣れた手つきで栞を車に押し込み、ドアを閉めた。",
+                "男「チッ、ずらかるぞ！」",
+                "俺が駆けつけるよりも早く、黒い車は猛スピードで走り去っていった……。"
+            ],
+            nextScene: "game_over"
+        },
+        "kidnap_success_1": {
+            bgId: "ev_kidnap",
+            text: [
+                "冴島「（ちんたら叫んでる暇はねえ！）」",
+                "俺は全速力で駆け出し、栞の腕を掴もうとしていた男の一人に思いきり体当たりした！",
+                "男「ぐあっ！？ てめえ、何者だ！」",
+                "冴島「聖蘭学園の歴史教師さ。生徒の遅刻指導には厳しいんでね。」",
+                "もう一人の男が懐からスタンガンを取り出し、ジリジリと間合いを詰めてくる。"
+            ],
+            nextScene: "kidnap_qte_2_commands"
+        },
+        "kidnap_qte_2_commands": {
+            bgId: "ev_kidnap",
+            text: [],
+            commands: [
+                { label: "男の腕を掴む", target: "kidnap_success_2" },
+                { label: "足払いをする", target: "kidnap_fail_3" }
+            ]
+        },
+        "kidnap_fail_3": {
+            bgId: "ev_kidnap",
+            text: [
+                "冴島「（下段を崩す！）」",
+                "俺は鋭く足払いを仕掛けたが、男はそれを読んでいたかのように後方に飛び退いた。",
+                "体勢が崩れた俺の背中に、強烈な電流の痛みが走る。",
+                "冴島「がはっ……！」",
+                "倒れ伏す俺を嘲笑うかのように、男は栞を引きずり、車へと押し込んでいった……。"
+            ],
+            nextScene: "game_over"
+        },
+        "kidnap_success_2": {
+            bgId: "ev_kidnap",
+            text: [
+                "冴島「（その手には乗らねえよ！）」",
+                "俺はスタンガンを突き出してくる腕の軌道を紙一重でかわし、そのまま男の手首を極め上げた。",
+                "男「ぎゃああっ！」",
+                "骨が軋む音とともにスタンガンが地面に落ちる。俺は栞を男の手から引き離し、背後に庇った。",
+                "騒ぎに気づいた他の教師たちが、ようやく校門に駆けつけてくる。",
+                "男たち「チッ、ずらかるぞ！」",
+                "不利を悟った男たちは車に飛び乗り、急発進して走り去っていった。"
+            ],
+            nextScene: "kidnap_rescued"
+        },
+        "kidnap_rescued": {
+            bgId: "bg_gate_morning", 
+            charId: "ch_shiori",
+            bgm: "bgm", 
+            text: [
+                "冴島「ふぅ……怪我はないか、栞嬢。」",
+                "栞「ひっ、あ……うぅ……っ。」",
+                "栞は恐怖のあまりその場にへたり込み、ガタガタと震えている。"
+            ],
+            nextScene: "kidnap_rescued_2"
+        },
+        "kidnap_rescued_2": {
+            bgId: "bg_gate_morning", 
+            charId: "ch_homura",
+            text: [
+                "そこへ、異変に気づいたほむらが血相を変えて駆けつけてきた。",
+                "ほむら「栞！ 栞、大丈夫！？ もう大丈夫だから……！」",
+                "ほむらは震える栞をきつく抱きしめ、必死に背中をさすっている。",
+                "冴島「間一髪だったな。白昼堂々、学校の門前で攫おうとするとは……かなり焦っているか、よほどの手練れだ。」",
+                "ほむら「冴島さん……本当に、ありがとうございました。あなたがいてくれなかったら……。」",
+                "冴島「探偵の仕事をしたまでさ。だが、これで連中も本気だってことがわかった。気を引き締めて護衛を続けるぞ。」"
+            ],
+            nextScene: "to_be_continued_commands"
+        },
+        "to_be_continued_commands": {
+            bgId: "bg_gate_morning",
+            text: [],
+            commands: [
                 { label: "To Be Continued...", target: "start" }
             ]
         },
+        // --- ゲームオーバー処理 ---
+        "game_over": {
+            bgId: "ev_kidnap",
+            onLoad: () => { 
+                state.gameOverCount = (state.gameOverCount || 0) + 1; 
+            },
+            text: [
+                "―― GAME OVER ――"
+            ],
+            nextScene: "game_over_commands"
+        },
+        "game_over_commands": {
+            bgId: "ev_kidnap",
+            text: [],
+            onLoad: () => {
+                // 2回以上失敗したらヒントを出す
+                if (state.gameOverCount >= 2) {
+                    scenario["game_over_commands"].text = ["【ヒント】\n相手は車だ。正面から立ち塞がっても勝ち目はない。\nまた、武器を持った相手には下手に手を出さず、確実な隙を突く必要がある。"];
+                } else {
+                    scenario["game_over_commands"].text = [];
+                }
+            },
+            commands: [
+                { label: "イベント前に戻る", target: "next_morning_greeting" },
+                { label: "ロード", action: "direct_load" }
+            ]
+        },
+
         // システムメニュー
         "system_menu": {
             text: [], 
@@ -776,6 +989,17 @@
         state.sceneId = sceneId;
         const scene = scenario[sceneId];
         
+        // BGMの切り替え処理
+        if (scene.bgm) {
+            if (currentBgmKey !== scene.bgm) {
+                const wasPlaying = !customBgmAudio.paused;
+                customBgmAudio.pause();
+                currentBgmKey = scene.bgm;
+                customBgmAudio = bgmAudios[currentBgmKey] || bgmAudios["bgm"];
+                if (wasPlaying && hasInteracted) customBgmAudio.play().catch(e=>{});
+            }
+        }
+
         if (scene.onLoad) scene.onLoad();
 
         state.textPages = scene.text || [];
@@ -995,26 +1219,41 @@
 
             // モードに応じた描画
             if (!state.showCommands) {
-                // ▼テキスト表示モード
                 ctx.fillStyle = "#fff";
                 ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif"; 
-                ctx.textAlign = "left";
-                ctx.shadowColor = "#000";
-                ctx.shadowBlur = 4;
-
-                const textPadX = 40; 
-                const textPadY = 55; 
-                const lineHeight = 42; 
                 
-                drawTextAndGetEndPosition(state.displayedText, win.x + textPadX, win.y + textPadY, win.w - (textPadX * 2), lineHeight);
-                ctx.shadowBlur = 0;
+                // ゲームオーバー時の特別描画（真ん中に表示）
+                if (state.sceneId === "game_over") {
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.shadowColor = "#000";
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(state.displayedText, win.x + win.w / 2, win.y + win.h / 2);
+                    ctx.shadowBlur = 0;
+                    if (!state.isTyping) {
+                        ctx.fillStyle = (Date.now() % 1000 < 500) ? "#fff" : "transparent";
+                        ctx.fillText("▼", win.x + win.w / 2, win.y + win.h / 2 + 40);
+                    }
+                    ctx.textBaseline = "alphabetic";
+                } else {
+                    // 通常のテキスト表示
+                    ctx.textAlign = "left";
+                    ctx.shadowColor = "#000";
+                    ctx.shadowBlur = 4;
 
-                if (!state.isTyping) {
-                    ctx.fillStyle = (Date.now() % 1000 < 500) ? "#fff" : "transparent";
-                    ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
-                    ctx.fillText("▼", state.lastLineEndX + 5, state.lastLineEndY);
+                    const textPadX = 40; 
+                    const textPadY = 55; 
+                    const lineHeight = 42; 
+                    
+                    drawTextAndGetEndPosition(state.displayedText, win.x + textPadX, win.y + textPadY, win.w - (textPadX * 2), lineHeight);
+                    ctx.shadowBlur = 0;
+
+                    if (!state.isTyping) {
+                        ctx.fillStyle = (Date.now() % 1000 < 500) ? "#fff" : "transparent";
+                        ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+                        ctx.fillText("▼", state.lastLineEndX + 5, state.lastLineEndY);
+                    }
                 }
-
             } else {
                 // ▼コマンド表示モード
                 state.buttons.forEach((btn, idx) => {
@@ -1192,6 +1431,14 @@
                     loadScene(id);
                 } else {
                     closeSystemMenu(); 
+                }
+            }
+            else if (btn.action === "direct_load") {
+                const saved = localStorage.getItem("seiran_save_data");
+                if (saved && scenario[saved]) {
+                    loadScene(saved);
+                } else {
+                    loadScene("start"); 
                 }
             }
             

@@ -99,13 +99,14 @@
     const imageCache = {};
     const fallbackImages = {
         "bg_gate": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nSchool+Gate+(Sunset)",
-        "bg_gate_morning": "https://placehold.co/720x1280/87ceeb/000?text=Background:\\nSchool+Gate+(Morning)", // 朝の校門
+        "bg_gate_morning": "https://placehold.co/720x1280/87ceeb/000?text=Background:\\nSchool+Gate+(Morning)", 
         "bg_office": "https://placehold.co/720x1280/3e2723/FFF?text=Background:\\nPrincipal+Office",
         "bg_library": "https://placehold.co/720x1280/2e2b20/FFF?text=Background:\\nLibrary",
         "bg_clocktower": "https://placehold.co/720x1280/1c2331/FFF?text=Background:\\nClock+Tower",
         "bg_classroom": "https://placehold.co/720x1280/5d4037/FFF?text=Background:\\nClassroom", 
         "bg_warehouse": "https://placehold.co/720x1280/2c3e50/FFF?text=Background:\\nWarehouse+Office",
         "ev_kidnap": "https://placehold.co/720x1280/0d1117/FFF?text=Event+CG:\\nKidnapping+(720x1280)",
+        "ev_rescue": "https://placehold.co/720x1280/2d0815/FFF?text=Event+CG:\\nRescue+Homura+and+Shiori", // 救出イベントスチルを追加
         "ch_homura": "https://placehold.co/400x800/e88/FFF?text=Character:\\nHomura+(400x800)",
         "ch_yui": "https://placehold.co/400x800/85a/FFF?text=Character:\\nYui+Tachibana",
         "ch_kenta": "https://placehold.co/400x800/585/FFF?text=Character:\\nKenta+Morishita",
@@ -218,11 +219,10 @@
         }
     }
 
-    // デフォルトピープー音もシーンで雰囲気を変える
     function playDefaultBGM() {
         if (!audioCtx) return;
         const notesNormal = [220, 261.63, 329.63, 261.63, 220, 164.81]; 
-        const notesTension = [110, 116.54, 123.47]; // 低く不気味に
+        const notesTension = [110, 116.54, 123.47]; 
         
         defaultBgmInterval = setInterval(() => {
             if (!isBgmPlaying || customBgmAudio.readyState >= 2) return; 
@@ -285,7 +285,7 @@
         lastLineEndX: 0, 
         lastLineEndY: 0,
         flags: {}, 
-        gameOverCount: 0, // ゲームオーバー回数
+        gameOverCount: 0, 
         pendingLoadSceneId: null 
     };
 
@@ -304,10 +304,9 @@
             bgm: "bgm",
             text: [
                 "冴島「ここが聖蘭学園か。なかなか歴史のありそうな立派な門構えだな。」",
-                "冴島「明日から俺が、ここの歴史教師か……。\n柄じゃないが、依頼のためだ。夕暮れ時の下見といくか。」"
+                "冴島「明日から俺が, ここの歴史教師か……。\n柄じゃないが、依頼のためだ。夕暮れ時の下見といくか。」"
             ],
             onLoad: () => { 
-                // フラグはリセットするが、ゲームオーバー回数だけは維持する
                 state.flags = {}; 
             },
             nextScene: "start_commands"
@@ -549,7 +548,7 @@
             charId: "ch_kenta", 
             text: [
                 "森下「あん？ なんだ実習生。俺は今ハトの世話で忙しいんだがな。」",
-                "冴島「森下さん、いつもお疲れ様です。ハトの世話、大変ですね。」",
+                "冴島「森下さん、いつもお疲れ様です。ハトの世話, 大変ですね。」",
                 "森下「まぁな。だが、最近ハトが夕暮れ時に妙に騒ぐんだよ。あの時計塔の不協和音が鳴り響くときにな。」",
                 "冴島「ハトが騒ぐ……？ 橘副学園長はよくハトの餌やりに来られるんですか？」",
                 "森下「いや、副学園長がこんな泥臭い場所に来るわけねぇだろ。ただ……ここ数日、時計塔の中に頻繁に入り浸っているのは見たぜ。」",
@@ -597,7 +596,7 @@
             text: [
                 "冴島「よし、橘副学園長と用務員の森下、そして図書室の証拠……すべてが結びついた。」",
                 "冴島「犯人は時計塔の合鍵を使い、夕暮れ時に作動する超音波発振器を仕掛けた。ハトが騒いだのはその超音波のせいだ。」",
-                "冴島「そして、生徒が音を避けている間に、図書室の窓に仕掛けた細いピアノ線を使って……内部から本を抜き取った。」",
+                "冴島「精度を高めて、生徒が音を避けている間に、図書室の窓に仕掛けた細いピアノ線を使って……内部から本を抜き取った。」",
                 "冴島「犯人が誰にせよ、まもなく夕暮れ。発振器の作動を確認しに、犯人が時計塔に戻ってくるはずだ。」"
             ],
             nextScene: "deduction_commands"
@@ -782,7 +781,6 @@
                 { label: "翌朝へ", target: "next_morning_greeting" }
             ]
         },
-        // ===== 朝の挨拶〜誘拐未遂イベント編 =====
         "next_morning_greeting": {
             bgId: "bg_gate_morning",
             bgm: "bgm",
@@ -800,7 +798,7 @@
             text: [
                 "栞「おはようございます……冴島先生。」",
                 "冴島「顔色が少し悪いな。昨日はよく眠れなかったか？」",
-                "栞「はい……。帰り道も、なんとなく誰かに見られているような気がして……。」",
+                "栞「はい……。帰り道も、なんとなく誰かに見されているような気がして……。」",
                 "冴島「（やはり、奴らはもうすぐそこまで来ているな……。）」",
                 "冴島「心配するな。学園内なら俺も目を光らせておける。……ん？」"
             ],
@@ -892,8 +890,7 @@
             nextScene: "kidnap_rescued"
         },
         "kidnap_rescued": {
-            bgId: "bg_gate_morning", 
-            charId: "ch_shiori",
+            bgId: "ev_rescue", // へたり込む栞を庇う専用イベントCGへ変更
             bgm: "bgm", 
             text: [
                 "冴島「ふぅ……怪我はないか、栞嬢。」",
@@ -903,8 +900,7 @@
             nextScene: "kidnap_rescued_2"
         },
         "kidnap_rescued_2": {
-            bgId: "bg_gate_morning", 
-            charId: "ch_homura",
+            bgId: "ev_rescue", // CGをそのまま維持して会話を続ける
             text: [
                 "そこへ、異変に気づいたほむらが血相を変えて駆けつけてきた。",
                 "ほむら「栞！ 栞、大丈夫！？ もう大丈夫だから……！」",
@@ -916,7 +912,7 @@
             nextScene: "to_be_continued_commands"
         },
         "to_be_continued_commands": {
-            bgId: "bg_gate_morning",
+            bgId: "bg_gate_morning", // 最後のシーンのみ元の校門に戻して完了へ
             text: [],
             commands: [
                 { label: "To Be Continued...", target: "start" }
@@ -937,7 +933,6 @@
             bgId: "ev_kidnap",
             text: [],
             onLoad: () => {
-                // 2回以上失敗したらヒントを出す
                 if (state.gameOverCount >= 2) {
                     scenario["game_over_commands"].text = ["【ヒント】\n相手は車だ。正面から立ち塞がっても勝ち目はない。\nまた、武器を持った相手には下手に手を出さず、確実な隙を突く必要がある。"];
                 } else {
@@ -1184,8 +1179,9 @@
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
         }
 
-        // 2. キャラクター描画
-        if (visualScene.charId && imageCache[visualScene.charId] && imageCache[visualScene.charId].complete) {
+        // 2. キャラクター描画（イベントスチル画像 ev_rescue と ev_kidnap 表示時は立ち絵を表示しない）
+        const isEventScene = (bgId === "ev_rescue" || bgId === "ev_kidnap");
+        if (!isEventScene && visualScene.charId && imageCache[visualScene.charId] && imageCache[visualScene.charId].complete) {
             drawCharacter(imageCache[visualScene.charId]);
         }
 
@@ -1194,7 +1190,6 @@
             const uiImg = imageCache["ui_panel"];
             const win = LAYOUT.window;
             
-            // ウィンドウ背景描画
             if (uiImg && uiImg.complete) {
                 ctx.drawImage(uiImg, win.x, win.y, win.w, win.h);
             } else {
@@ -1205,7 +1200,6 @@
                 ctx.strokeRect(win.x, win.y, win.w, win.h);
             }
 
-            // 常時表示の「システム」ボタン
             const sysBtn = LAYOUT.sysBtn;
             ctx.fillStyle = state.sysBtnActive ? "#ffeb3b" : "#ccc";
             ctx.font = "bold 22px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
@@ -1217,12 +1211,11 @@
             ctx.shadowBlur = 0;
             ctx.textBaseline = "alphabetic";
 
-            // モードに応じた描画
             if (!state.showCommands) {
                 ctx.fillStyle = "#fff";
                 ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif"; 
                 
-                // ゲームオーバー時の特別描画（真ん中に表示）
+                // ゲームオーバー時の特別描画（UIの真ん中・中央揃え）
                 if (state.sceneId === "game_over") {
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
@@ -1255,7 +1248,6 @@
                     }
                 }
             } else {
-                // ▼コマンド表示モード
                 state.buttons.forEach((btn, idx) => {
                     const isPressed = (state.activeButtonIndex === idx);
                     

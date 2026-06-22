@@ -105,13 +105,17 @@
         "bg_clocktower": "https://placehold.co/720x1280/1c2331/FFF?text=Background:\\nClock+Tower",
         "bg_classroom": "https://placehold.co/720x1280/5d4037/FFF?text=Background:\\nClassroom", 
         "bg_warehouse": "https://placehold.co/720x1280/2c3e50/FFF?text=Background:\\nWarehouse+Office",
+        "bg_warehouse_night": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nWarehouse+(Night)",
+        "bg_bar": "https://placehold.co/720x1280/1a1010/FFF?text=Background:\\nNight+Bar", 
         "ev_kidnap": "https://placehold.co/720x1280/0d1117/FFF?text=Event+CG:\\nKidnapping+(720x1280)",
-        "ev_rescue": "https://placehold.co/720x1280/2d0815/FFF?text=Event+CG:\\nRescue+Homura+and+Shiori", // 救出イベントスチルを追加
+        "ev_rescue": "https://placehold.co/720x1280/2d0815/FFF?text=Event+CG:\\nRescue+Homura+and+Shiori",
+        "ev_medal": "https://placehold.co/720x1280/111/FFF?text=Event+CG:\\nMedal+Photo", 
         "ch_homura": "https://placehold.co/400x800/e88/FFF?text=Character:\\nHomura+(400x800)",
         "ch_yui": "https://placehold.co/400x800/85a/FFF?text=Character:\\nYui+Tachibana",
         "ch_kenta": "https://placehold.co/400x800/585/FFF?text=Character:\\nKenta+Morishita",
         "ch_principal": "https://placehold.co/400x800/444/FFF?text=Character:\\nPrincipal", 
         "ch_shiori": "https://placehold.co/400x800/4a8/FFF?text=Character:\\nShiori",
+        "ch_informant": "https://placehold.co/400x800/345/FFF?text=Character:\\nInformant", 
         "ui_panel": "https://placehold.co/720x280/000028/FFF?text=UI+Panel"
     };
 
@@ -139,7 +143,8 @@
     // 複数BGM対応
     const bgmAudios = {
         "bgm": new Audio(`assets/audio/bgm.mp3`),
-        "bgm_tension": new Audio(`assets/audio/bgm_tension.mp3`)
+        "bgm_tension": new Audio(`assets/audio/bgm_tension.mp3`),
+        "bgm_night": new Audio(`assets/audio/bgm_night.mp3`) 
     };
     
     for (let key in bgmAudios) {
@@ -168,7 +173,6 @@
         }
     });
 
-    // 複数音楽ファイルの読み込みと上書き
     document.getElementById('local-audio-upload').addEventListener('change', (e) => {
         const files = e.target.files;
         if (!files.length) return;
@@ -267,10 +271,31 @@
         }
     }
 
+    // --- タイトル演出ステータス ---
+    let titleState = {
+        active: false,
+        phase: 0, // 0: fadeIn, 1: wait, 2: fadeOut
+        alpha: 0,
+        timer: 0,
+        text1: "",
+        text2: "",
+        nextScene: ""
+    };
+
+    function showTitle(t1, t2, next) {
+        titleState.active = true;
+        titleState.phase = 0;
+        titleState.alpha = 0;
+        titleState.timer = 0;
+        titleState.text1 = t1;
+        titleState.text2 = t2;
+        titleState.nextScene = next;
+    }
+
     // --- ゲームステータス ---
     let state = {
-        sceneId: "start",
-        previousSceneId: "start",
+        sceneId: "dummy_start",
+        previousSceneId: "dummy_start",
         textPages: [],
         currentPage: 0,
         displayedText: "",
@@ -299,12 +324,20 @@
        シナリオデータ
        ========================================= */
     const scenario = {
+        "dummy_start": {
+            text: [], commands: []
+        },
+        "act1_end_title": {
+            onLoad: () => {
+                showTitle("ACT 1", "END", "start");
+            }
+        },
         "start": {
             bgId: "bg_gate",
             bgm: "bgm",
             text: [
                 "冴島「ここが聖蘭学園か。なかなか歴史のありそうな立派な門構えだな。」",
-                "冴島「明日から俺が, ここの歴史教師か……。\n柄じゃないが、依頼のためだ。夕暮れ時の下見といくか。」"
+                "冴島「明日から俺が、ここの歴史教師か……。\n柄じゃないが、依頼のためだ。夕暮れ時の下見といくか。」"
             ],
             onLoad: () => { 
                 state.flags = {}; 
@@ -418,9 +451,29 @@
             charId: "ch_principal",
             text: [],
             commands: [
-                { label: "図書室へ", target: "library_enter" },
-                { label: "時計塔へ", target: "clocktower_enter" }
+                { label: "図書室へ", target: "goto_library" },
+                { label: "時計塔へ", target: "goto_clocktower" }
             ]
+        },
+        "goto_library": {
+            onLoad: () => {
+                if (state.flags.visitedLibrary) {
+                    loadScene("library_commands");
+                } else {
+                    state.flags.visitedLibrary = true;
+                    loadScene("library_enter");
+                }
+            }
+        },
+        "goto_clocktower": {
+            onLoad: () => {
+                if (state.flags.sawYui) {
+                    loadScene("clocktower_post_yui_commands");
+                } else {
+                    state.flags.sawYui = true;
+                    loadScene("clocktower_enter");
+                }
+            }
         },
         "library_enter": {
             bgId: "bg_library", 
@@ -436,7 +489,8 @@
             commands: [
                 { label: "本棚を調べる", target: "library_bookshelf" },
                 { label: "窓際を調べる", target: "library_window" },
-                { label: "戻る", target: "office_move_commands" } 
+                { label: "時計塔へ", target: "goto_clocktower" },
+                { label: "学園長室へ戻る", target: "office_move_commands" } 
             ]
         },
         "library_bookshelf": {
@@ -479,7 +533,7 @@
             charId: "ch_yui", 
             text: [
                 "？？？「……ふぅ。これで仕込みは完璧ね。」",
-                "冴島「（あの女性は……副学園長の橘結衣だな。鍵を開けて、時計塔から出てきたのか？）」",
+                "冴島「（あの女性は……最近赴任してきたという女教師の橘結衣だな。鍵を開けて、時計塔から出てきたのか？）」",
                 "橘「あら？ そこにいるのは誰かしら？ 姿を見せなさい。」",
                 "冴島「おっと失礼、散歩がてら時計塔を見上げていた実習生の冴島です。」",
                 "橘「実習生？……だらしない身なりね。用がないなら速やかに立ち去りなさい。ここは大人の入る場所ではありません。」"
@@ -498,7 +552,7 @@
             text: [
                 "？？？「あら、見慣れない顔ね。そこで何をしているの？」",
                 "冴島「明日からお世話になる歴史の実習生、冴島です。時計塔が綺麗だったので見とれていまして。」",
-                "橘「私は副学園長の橘結衣です。実習生としての自覚が足りないようね。用がないなら持ち場に戻りなさい。」",
+                "橘「私は最近赴任した教師の橘結衣です。実習生としての自覚が足りないようね。用がないなら持ち場に戻りなさい。」",
                 "冴島「橘先生、この時計塔って普段は誰が管理してるんですか？」",
                 "橘「私と、用務員の森下よ。これ以上詮索する必要はありません。早く行きなさい。」"
             ],
@@ -514,7 +568,7 @@
             bgId: "bg_clocktower",
             charId: "ch_yui",
             text: [
-                "冴島「副学園長、時計塔の調査を……いえ、時計塔の中を見学させていただけないでしょうか？」",
+                "冴島「橘先生、時計塔の調査を……いえ、時計塔の中を見学させていただけないでしょうか？」",
                 "橘「だめです。時計塔の鍵を所持しているのは私と用務員だけ。不審な実習生を入れるわけにはいきません。」",
                 "橘「これ以上、不穏な動きをするなら、実習を即刻打ち切らせます。お引き取りを。」",
                 "冴島「（なるほど。時計塔の鍵を持つの橘結衣。かなりの高圧的態度……容疑者筆頭だな）」"
@@ -530,7 +584,7 @@
         "clocktower_post_yui": {
             bgId: "bg_clocktower",
             text: [
-                "冴島「橘副学園長が立ち去ったな。さて、もう少し周囲を調べてみるか。」"
+                "冴島「橘先生が立ち去ったな。さて、もう少し周囲を調べてみるか。」"
             ],
             nextScene: "clocktower_post_yui_commands"
         },
@@ -540,18 +594,19 @@
             commands: [
                 { label: "用務員に話を聞く", target: "talk_kenta" },
                 { label: "扉を調べる", target: "clocktower_door" },
-                { label: "戻る", target: "office_move_commands" }
+                { label: "図書室へ", target: "goto_library" },
+                { label: "学園長室へ戻る", target: "office_move_commands" }
             ]
         },
         "talk_kenta": {
             bgId: "bg_clocktower",
             charId: "ch_kenta", 
             text: [
-                "森下「あん？ なんだ実習生。俺は今ハトの世話で忙しいんだがな。」",
-                "冴島「森下さん、いつもお疲れ様です。ハトの世話, 大変ですね。」",
-                "森下「まぁな。だが、最近ハトが夕暮れ時に妙に騒ぐんだよ。あの時計塔の不協和音が鳴り響くときにな。」",
-                "冴島「ハトが騒ぐ……？ 橘副学園長はよくハトの餌やりに来られるんですか？」",
-                "森下「いや、副学園長がこんな泥臭い場所に来るわけねぇだろ。ただ……ここ数日、時計塔の中に頻繁に入り浸っているのは見たぜ。」",
+                "森下「あん？ なんだ実習生。俺は今忙しいんだがな。」",
+                "冴島「森下さん、いつもお疲れ様です。……ん？ あそこのハト、随分と怯えているようですね。」",
+                "森下「あぁ、それに気づいたか。最近ハトが夕暮れ時に妙に騒ぐんだよ。あの時計塔の不協和音が鳴り響くときにな。」",
+                "冴島「ハトが騒ぐ……？ 橘先生はここへよく来られるんですか？」",
+                "森下「いや、新任の綺麗などこかの先生がこんな泥臭い場所に来るわけねぇだろ。ただ……ここ数日、時計塔の中に頻繁に入り浸っているのは見たぜ。」",
                 "森下「用もないのに時計の裏の機械をじっと見てるんだ。何を企んでるんだか……。」",
                 "冴島「（ハトが騒ぐのは超音波のせい、そして時計塔に入り浸る橘結衣……。役者が揃ってきたぜ。）」"
             ],
@@ -594,9 +649,9 @@
         "deduction": {
             bgId: "bg_clocktower",
             text: [
-                "冴島「よし、橘副学園長と用務員の森下、そして図書室の証拠……すべてが結びついた。」",
+                "冴島「よし、新任教師の橘と用務員の森下、そして図書室の証拠……すべてが結びついた。」",
                 "冴島「犯人は時計塔の合鍵を使い、夕暮れ時に作動する超音波発振器を仕掛けた。ハトが騒いだのはその超音波のせいだ。」",
-                "冴島「精度を高めて、生徒が音を避けている間に、図書室の窓に仕掛けた細いピアノ線を使って……内部から本を抜き取った。」",
+                "冴島「そして、生徒が音を避けている間に、図書室の窓に仕掛けた細いピアノ線を使って……内部から本を抜き取った。」",
                 "冴島「犯人が誰にせよ、まもなく夕暮れ。発振器の作動を確認しに、犯人が時計塔に戻ってくるはずだ。」"
             ],
             nextScene: "deduction_commands"
@@ -641,7 +696,7 @@
             bgId: "bg_clocktower",
             charId: "ch_yui",
             text: [
-                "冴島「そこまでだ、橘副学園長。」",
+                "冴島「そこまでだ、橘先生。」",
                 "橘「っ！？ ……だ、誰ですか、人の見学を邪魔する不審者は！」",
                 "冴島「見学にしちゃあ、手荷物が随分と物騒ですね。そのバッグから覗いているのは……盗まれた閉架書庫の古書、そして超音波の発振器ですね？」",
                 "橘「なんのことですか！ 私はただ、時計の機械トラブルを点検しに……」"
@@ -675,7 +730,31 @@
             charId: "ch_yui",
             text: [],
             commands: [
-                { label: "事件解決", target: "ending" }
+                { label: "学園長室へ連行する", target: "report_to_principal" }
+            ]
+        },
+        "report_to_principal": {
+            bgId: "bg_office",
+            charId: "ch_principal",
+            text: [
+                "俺は橘先生を伴い、学園長室へ向かった。",
+                "冴島「学園長。例の『時計塔の悪魔』の正体と、盗まれた古書をお持ちしました。」",
+                "学園長「おお……！ 本が無事に戻ったのですね。素晴らしい手腕です。……しかし、まさか新任の橘先生、あなたが？」",
+                "橘「……申し訳ありません。学園の隠し財産に目が眩んで……。」",
+                "学園長「……。」",
+                "学園長「本が無事に戻ったのであれば、今回は大事にはしません。警察沙汰にすれば学園の評判にも関わりますからね。」",
+                "学園長「橘先生、あなたには厳重注意と……しばらくの間、実習生のサポート業務に専念していただきます。罪は問いません。」",
+                "橘「……は、はい。寛大なご処置、感謝いたします……。」",
+                "冴島「（やれやれ、太っ腹な学園長だ。まぁ、依頼は達成したから俺には関係ないがな。）」"
+            ],
+            nextScene: "report_to_principal_commands"
+        },
+        "report_to_principal_commands": {
+            bgId: "bg_office",
+            charId: "ch_principal",
+            text: [],
+            commands: [
+                { label: "教室へ向かう", target: "ending" }
             ]
         },
         "ending": {
@@ -798,7 +877,7 @@
             text: [
                 "栞「おはようございます……冴島先生。」",
                 "冴島「顔色が少し悪いな。昨日はよく眠れなかったか？」",
-                "栞「はい……。帰り道も、なんとなく誰かに見されているような気がして……。」",
+                "栞「はい……。帰り道も、なんとなく誰かに見られているような気がして……。」",
                 "冴島「（やはり、奴らはもうすぐそこまで来ているな……。）」",
                 "冴島「心配するな。学園内なら俺も目を光らせておける。……ん？」"
             ],
@@ -890,7 +969,7 @@
             nextScene: "kidnap_rescued"
         },
         "kidnap_rescued": {
-            bgId: "ev_rescue", // へたり込む栞を庇う専用イベントCGへ変更
+            bgId: "ev_rescue", 
             bgm: "bgm", 
             text: [
                 "冴島「ふぅ……怪我はないか、栞嬢。」",
@@ -900,22 +979,164 @@
             nextScene: "kidnap_rescued_2"
         },
         "kidnap_rescued_2": {
-            bgId: "ev_rescue", // CGをそのまま維持して会話を続ける
+            bgId: "ev_rescue", 
             text: [
                 "そこへ、異変に気づいたほむらが血相を変えて駆けつけてきた。",
                 "ほむら「栞！ 栞、大丈夫！？ もう大丈夫だから……！」",
                 "ほむらは震える栞をきつく抱きしめ、必死に背中をさすっている。",
                 "冴島「間一髪だったな。白昼堂々、学校の門前で攫おうとするとは……かなり焦っているか、よほどの手練れだ。」",
                 "ほむら「冴島さん……本当に、ありがとうございました。あなたがいてくれなかったら……。」",
-                "冴島「探偵の仕事をしたまでさ。だが、これで連中も本気だってことがわかった。気を引き締めて護衛を続けるぞ。」"
+                "冴島「探偵の仕事をしたまでさ。だが、これで連中も本気だってことがわかった。気を引き締めて護衛を続けるぞ。」",
+                "冴島「……ん？ 奴らが車を出した跡に、何か落ちているな。」"
             ],
-            nextScene: "to_be_continued_commands"
+            nextScene: "find_photo"
         },
-        "to_be_continued_commands": {
-            bgId: "bg_gate_morning", // 最後のシーンのみ元の校門に戻して完了へ
+        "find_photo": {
+            bgId: "ev_medal", 
+            text: [
+                "俺が拾い上げたのは、ポラロイドカメラで撮られた一枚の写真だった。",
+                "写真には、見慣れない奇妙な紋章が刻まれたアンティーク調の『メダル』が写っている。",
+                "冴島「こいつは……？ 誘拐犯が落としたってことは、こいつが狙いに関係しているのか？」",
+                "栞「あっ……！ それ……。」"
+            ],
+            nextScene: "talk_about_medal"
+        },
+        "talk_about_medal": {
+            bgId: "bg_gate_morning",
+            charId: "ch_shiori",
+            text: [
+                "栞は自分の胸元、制服のブラウスの下から、一本のペンダントを引っ張り出した。",
+                "そこには、写真と全く同じ紋章のメダルが揺れていた。",
+                "栞「これ、父から『絶対に肌身離さず持っていなさい』と渡されたお守りなんです。」",
+                "栞「服の中に入れていたので、誰にも見せていません……。ほむらちゃんにも。」",
+                "冴島「なるほど。連中の狙いは誘拐そのものじゃなく、このメダルか。……あるいは両方か。」",
+                "冴島「栞嬢、悪いがこのメダル、少しの間預からせてくれないか。知り合いに心当たりを探らせてみる。」",
+                "栞「……はい。お願いします。」"
+            ],
+            nextScene: "move_to_bar_commands"
+        },
+        "move_to_bar_commands": {
+            bgId: "bg_gate_morning",
             text: [],
             commands: [
-                { label: "To Be Continued...", target: "start" }
+                { label: "夜の街へ", target: "at_bar" }
+            ]
+        },
+        "at_bar": {
+            bgId: "bg_bar",
+            bgm: "bgm_night", 
+            charId: "ch_informant", 
+            text: [
+                "薄暗いジャズバー。カウンターの隅でグラスを傾ける男に、俺はメダルと写真を滑らせた。",
+                "情報屋「……また厄介そうなヤマを持ってきたな、冴島。」",
+                "冴島「ただの迷子探しさ。この意匠、どこの裏組織か、それとも特定の国家の息がかかったものか……心当たりはないか？」",
+                "情報屋「外交官の娘が絡んでるんだろ？ ……少し時間をくれ。ウラを取ってみる。」",
+                "冴島「頼んだぜ。……さて、俺も一度事務所に戻って、頭を整理するとしよう。」"
+            ],
+            nextScene: "back_to_office_commands"
+        },
+        "back_to_office_commands": {
+            bgId: "bg_bar",
+            text: [],
+            commands: [
+                { label: "事務所へ戻る", target: "review_start" }
+            ]
+        },
+        "review_start": {
+            bgId: "bg_warehouse_night",
+            bgm: "bgm_night", 
+            text: [
+                "冴島「ふぅ……。長い一日だったな。」",
+                "冴島「明日に備えて、今日起きたことと判明した事実を整理しておこう。」"
+            ],
+            nextScene: "review_q1"
+        },
+        "review_q1": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「まず、あの『時計塔の悪魔』騒動。新任教師の橘がハトを騒がせるために時計塔に仕掛けたものは何だったか？」"
+            ],
+            nextScene: "review_q1_commands"
+        },
+        "review_q1_commands": {
+            bgId: "bg_warehouse_night",
+            text: [],
+            commands: [
+                { label: "爆弾", target: "review_q1_wrong" },
+                { label: "超音波発振器", target: "review_q2" },
+                { label: "毒ガス", target: "review_q1_wrong" }
+            ]
+        },
+        "review_q1_wrong": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「いや、違うな。そんな物騒なもんじゃなかったはずだ。もう一度考えよう。」"
+            ],
+            nextScene: "review_q1_commands" 
+        },
+        "review_q2": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「そうだ、超音波発振器だ。それを使って生徒を遠ざけ、図書室から古書を盗み出していた。」",
+                "冴島「次に、今朝の誘拐未遂事件。栞嬢を襲った連中が探していたと思われるものは何だ？」"
+            ],
+            nextScene: "review_q2_commands"
+        },
+        "review_q2_commands": {
+            bgId: "bg_warehouse_night",
+            text: [],
+            commands: [
+                { label: "隠し財産の地図", target: "review_q2_wrong" },
+                { label: "学園の合鍵", target: "review_q2_wrong" },
+                { label: "栞が持つメダル", target: "review_q3" }
+            ]
+        },
+        "review_q2_wrong": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「いや、違う。現場に落ちていたあの写真から考えれば、もっと直接的なターゲットがあるはずだ。」"
+            ],
+            nextScene: "review_q2_commands"
+        },
+        "review_q3": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「ああ、奴らが落とした写真に写っていたあのメダルだ。」",
+                "冴島「最後に、そのメダルを栞嬢に渡し、現在何らかの陰謀に巻き込まれていると思われる彼女の父親の職業は？」"
+            ],
+            nextScene: "review_q3_commands"
+        },
+        "review_q3_commands": {
+            bgId: "bg_warehouse_night",
+            text: [],
+            commands: [
+                { label: "歴史教師", target: "review_q3_wrong" },
+                { label: "外交官", target: "review_clear" },
+                { label: "警察官", target: "review_q3_wrong" }
+            ]
+        },
+        "review_q3_wrong": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「違うな。国際的な陰謀に関わるような、もっとお堅い仕事だったはずだ。」"
+            ],
+            nextScene: "review_q3_commands"
+        },
+        "review_clear": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「そうだ、外務省の外交官だ。」",
+                "冴島「古書の盗難事件と、外交官の娘を狙った誘拐事件……。」",
+                "冴島「一見無関係に見える２つの事件だが、この学園という舞台で奇妙に交錯している。」",
+                "冴島「明日、情報屋からの連絡を待って、さらに深く探りを入れるとしよう……。」"
+            ],
+            nextScene: "day_end_commands"
+        },
+        "day_end_commands": {
+            bgId: "bg_warehouse_night",
+            text: [],
+            commands: [
+                { label: "To Be Continued...", target: "act1_end_title" }
             ]
         },
         // --- ゲームオーバー処理 ---
@@ -1159,6 +1380,22 @@
     }
 
     function draw() {
+        // タイトルフェード演出中の描画処理
+        if (titleState.active) {
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            
+            ctx.fillStyle = `rgba(255, 255, 255, ${titleState.alpha})`;
+            ctx.font = "bold 50px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(titleState.text1, WIDTH / 2, HEIGHT / 2 - 40);
+            ctx.font = "bold 60px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+            ctx.fillText(titleState.text2, WIDTH / 2, HEIGHT / 2 + 50);
+            ctx.textBaseline = "alphabetic";
+            return; // 演出中は通常の描画をスキップ
+        }
+
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -1179,8 +1416,8 @@
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
         }
 
-        // 2. キャラクター描画（イベントスチル画像 ev_rescue と ev_kidnap 表示時は立ち絵を表示しない）
-        const isEventScene = (bgId === "ev_rescue" || bgId === "ev_kidnap");
+        // 2. キャラクター描画
+        const isEventScene = (bgId === "ev_rescue" || bgId === "ev_kidnap" || bgId === "ev_medal");
         if (!isEventScene && visualScene.charId && imageCache[visualScene.charId] && imageCache[visualScene.charId].complete) {
             drawCharacter(imageCache[visualScene.charId]);
         }
@@ -1215,7 +1452,6 @@
                 ctx.fillStyle = "#fff";
                 ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif"; 
                 
-                // ゲームオーバー時の特別描画（UIの真ん中・中央揃え）
                 if (state.sceneId === "game_over") {
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
@@ -1229,7 +1465,6 @@
                     }
                     ctx.textBaseline = "alphabetic";
                 } else {
-                    // 通常のテキスト表示
                     ctx.textAlign = "left";
                     ctx.shadowColor = "#000";
                     ctx.shadowBlur = 4;
@@ -1272,6 +1507,33 @@
         const dt = now - lastFrameTime;
         lastFrameTime = now;
 
+        // タイトルフェード演出中のロジック
+        if (titleState.active) {
+            titleState.timer += dt;
+            if (titleState.phase === 0) { // Fade In
+                titleState.alpha += dt / 1000;
+                if (titleState.alpha >= 1) {
+                    titleState.alpha = 1;
+                    titleState.phase = 1;
+                    titleState.timer = 0;
+                }
+            } else if (titleState.phase === 1) { // Wait
+                if (titleState.timer >= 2500) { // 2.5秒待機
+                    titleState.phase = 2;
+                    titleState.timer = 0;
+                }
+            } else if (titleState.phase === 2) { // Fade Out
+                titleState.alpha -= dt / 1000;
+                if (titleState.alpha <= 0) {
+                    titleState.alpha = 0;
+                    titleState.active = false;
+                    state.uiVisible = true;
+                    loadScene(titleState.nextScene);
+                }
+            }
+            return;
+        }
+
         if (state.isTyping && !state.showCommands) {
             textTimer += dt;
             if (textTimer >= TEXT_SPEED) {
@@ -1313,6 +1575,7 @@
     }
 
     canvas.addEventListener('pointerdown', (e) => {
+        if (titleState.active) return; // 演出中はクリック無効
         if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') return;
 
         if (!hasInteracted) {
@@ -1372,6 +1635,7 @@
     });
 
     canvas.addEventListener('pointerup', (e) => {
+        if (titleState.active) return;
         if (!state.uiVisible) return;
 
         if (state.sysBtnActive) {
@@ -1444,7 +1708,8 @@
     });
 
     window.onload = () => {
-        loadScene("start");
+        loadScene("dummy_start"); // 演出用に空のシーンをセット
+        showTitle("ACT 1", "予兆", "start"); // タイトル演出開始
         loop();
     };
 </script>

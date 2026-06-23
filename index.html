@@ -113,7 +113,7 @@
         "ch_homura": "https://placehold.co/400x800/e88/FFF?text=Character:\\nHomura+(400x800)",
         "ch_yui": "https://placehold.co/400x800/85a/FFF?text=Character:\\nYui+Tachibana",
         "ch_kenta": "https://placehold.co/400x800/585/FFF?text=Character:\\nKenta+Morishita",
-        "ch_principal": "https://placehold.co/400x800/444/FFF?text=Character:\\nPrincipal", 
+        "ch_principal": "https://placehold.co/400x800/444/FFF?text=Character:\\nPrincipal+(Elder+Woman)", 
         "ch_shiori": "https://placehold.co/400x800/4a8/FFF?text=Character:\\nShiori",
         "ch_informant": "https://placehold.co/400x800/345/FFF?text=Character:\\nInformant", 
         "ui_panel": "https://placehold.co/720x280/000028/FFF?text=UI+Panel"
@@ -1216,7 +1216,11 @@
             }
         }
 
+        const expectedSceneId = sceneId;
         if (scene.onLoad) scene.onLoad();
+        
+        // onLoad 内で別シーンに遷移した場合はその後の初期化処理を中断する（バグ修正）
+        if (state.sceneId !== expectedSceneId) return; 
 
         state.textPages = scene.text || [];
         

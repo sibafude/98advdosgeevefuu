@@ -140,15 +140,16 @@
     let defaultBgmInterval = null;
     let currentNote = 0;
 
-    // 複数BGM対応
+    // 複数BGM対応 (ジングルは1ファイルに統一)
     const bgmAudios = {
         "bgm": new Audio(`assets/audio/bgm.mp3`),
         "bgm_tension": new Audio(`assets/audio/bgm_tension.mp3`),
-        "bgm_night": new Audio(`assets/audio/bgm_night.mp3`) 
+        "bgm_night": new Audio(`assets/audio/bgm_night.mp3`),
+        "jingle": new Audio(`assets/audio/jingle.mp3`)
     };
     
     for (let key in bgmAudios) {
-        bgmAudios[key].loop = true;
+        bgmAudios[key].loop = !key.startsWith("jingle"); // ジングルはループしない
         bgmAudios[key].volume = 0.5;
         bgmAudios[key].onerror = () => {}; 
     }
@@ -186,13 +187,13 @@
             const reader = new FileReader();
             reader.onload = (event) => {
                 const newAudio = new Audio(event.target.result);
-                newAudio.loop = true;
+                newAudio.loop = !id.startsWith("jingle");
                 newAudio.volume = 0.5;
                 bgmAudios[id] = newAudio; 
                 
                 if (currentBgmKey === id || (currentBgmKey === 'bgm' && id === 'bgm')) {
                     customBgmAudio = newAudio;
-                    if (hasInteracted) customBgmAudio.play().catch(err => console.log("再生待機"));
+                    if (state.bgmEnabled && hasInteracted) customBgmAudio.play().catch(err => console.log("再生待機"));
                 }
             };
             reader.readAsDataURL(file);
@@ -202,10 +203,12 @@
     function startBGM() {
         if (!audioCtx) audioCtx = new AudioContext();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        if (customBgmAudio) {
+        if (!state.bgmEnabled) return;
+
+        if (customBgmAudio && currentBgmKey !== "stop") {
             if (customBgmAudio.paused) customBgmAudio.play().catch(e => console.error(e));
             isBgmPlaying = true;
-        } else if (!isBgmPlaying) {
+        } else if (!isBgmPlaying && currentBgmKey !== "stop") {
             isBgmPlaying = true;
             playDefaultBGM();
         }
@@ -279,10 +282,11 @@
         timer: 0,
         text1: "",
         text2: "",
-        nextScene: ""
+        nextScene: "",
+        jingle: ""
     };
 
-    function showTitle(t1, t2, next) {
+    function showTitle(t1, t2, next, jingleKey) {
         titleState.active = true;
         titleState.phase = 0;
         titleState.alpha = 0;
@@ -290,6 +294,14 @@
         titleState.text1 = t1;
         titleState.text2 = t2;
         titleState.nextScene = next;
+        titleState.jingle = jingleKey;
+
+        if (customBgmAudio) customBgmAudio.pause(); // BGM一時停止
+        
+        if (jingleKey && bgmAudios[jingleKey] && state.bgmEnabled && hasInteracted) {
+            bgmAudios[jingleKey].currentTime = 0;
+            bgmAudios[jingleKey].play().catch(e=>{});
+        }
     }
 
     // --- ゲームステータス ---
@@ -311,7 +323,8 @@
         lastLineEndY: 0,
         flags: {}, 
         gameOverCount: 0, 
-        pendingLoadSceneId: null 
+        pendingLoadSceneId: null,
+        bgmEnabled: true // BGMのオンオフ状態を管理
     };
 
     let stateBackup = null; 
@@ -329,7 +342,7 @@
         },
         "act1_end_title": {
             onLoad: () => {
-                showTitle("ACT 1", "END", "start");
+                showTitle("ACT 1", "END", "start", "jingle");
             }
         },
         "start": {
@@ -391,7 +404,7 @@
             charId: "ch_homura",
             text: [
                 "ほむら「ちょっと、そこの不審者さん。\nさっきから門の前でウロウロして何してるんですか？ 通報しますよ？」",
-                "冴島「おっと、誤解しないでくれ。俺は明日からここに赴任する、新任の歴史教師の冴島だ。」",
+                "冴島「おっと、誤解しないでくれ。俺は明日からここに赴任する、歴史の実習生、冴島だ。」",
                 "ほむら「明日からの先生……？ うーん、それにしては少し怪しい雰囲気ですけど。」",
                 "ほむら「ふと見せる目つきが、普通の教員志望の学生には見えませんね。何か隠しきれない鋭さを感じます。」",
                 "冴島「ははっ、ただ緊張しているだけだよ。明日初めて教壇に立つからね、肩に力が入っているのさ。」",
@@ -419,6 +432,7 @@
             charId: "ch_principal", 
             text: [
                 "冴島「失礼します。明日からお世話になる実習生の冴島です。」",
+                "冴島「（白髪交じりの上品な老婦人だ。温厚で優しそうな雰囲気が漂っているな。）」",
                 "学園長「……お待ちしておりました、冴島さん。いえ、探偵殿と言った方がよいでしょうか。」",
                 "冴島「ここではただの実習生でお願いしますよ。俺も目立ちたくはないんでね。」",
                 "冴島「それで……電話で伺った依頼の件ですが。」",
@@ -449,6 +463,7 @@
         "office_move_commands": {
             bgId: "bg_office",
             charId: "ch_principal",
+            bgm: "bgm", // 学園長室は通常のBGM
             text: [],
             commands: [
                 { label: "図書室へ", target: "goto_library" },
@@ -490,7 +505,11 @@
                 { label: "本棚を調べる", target: "library_bookshelf" },
                 { label: "窓際を調べる", target: "library_window" },
                 { label: "時計塔へ", target: "goto_clocktower" },
-                { label: "学園長室へ戻る", target: "office_move_commands" } 
+                { 
+                    label: "推理する", 
+                    target: "deduction", 
+                    condition: () => state.flags.checkedBookshelf && state.flags.checkedWindow && state.flags.checkedClockDoor 
+                }
             ]
         },
         "library_bookshelf": {
@@ -513,7 +532,8 @@
             nextScene: "library_commands" 
         },
         "clocktower_enter": {
-            bgId: "bg_clocktower", 
+            bgId: "bg_clocktower",
+            bgm: "stop", // 時計塔の入り口は不気味な静けさ
             text: [
                 "冴島「ここが時計塔の入り口か。立派なアンティーク調の扉だが、しっかりと鍵がかかっているな。」",
                 "冴島「ん……？ 誰か近づいてくるな。」"
@@ -530,7 +550,8 @@
         },
         "clocktower_hide": {
             bgId: "bg_clocktower",
-            charId: "ch_yui", 
+            charId: "ch_yui",
+            bgm: "bgm_tension", // 遭遇時に緊迫感
             text: [
                 "？？？「……ふぅ。これで仕込みは完璧ね。」",
                 "冴島「（あの女性は……最近赴任してきたという女教師の橘結衣だな。鍵を開けて、時計塔から出てきたのか？）」",
@@ -549,6 +570,7 @@
         "clocktower_wait": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
+            bgm: "bgm_tension",
             text: [
                 "？？？「あら、見慣れない顔ね。そこで何をしているの？」",
                 "冴島「明日からお世話になる歴史の実習生、冴島です。時計塔が綺麗だったので見とれていまして。」",
@@ -571,7 +593,7 @@
                 "冴島「橘先生、時計塔の調査を……いえ、時計塔の中を見学させていただけないでしょうか？」",
                 "橘「だめです。時計塔の鍵を所持しているのは私と用務員だけ。不審な実習生を入れるわけにはいきません。」",
                 "橘「これ以上、不穏な動きをするなら、実習を即刻打ち切らせます。お引き取りを。」",
-                "冴島「（なるほど。時計塔の鍵を持つの橘結衣。かなりの高圧的態度……容疑者筆頭だな）」"
+                "冴島「（なるほど。時計塔の鍵を持つのは橘結衣。かなりの高圧的態度……容疑者筆頭だな）」"
             ],
             nextScene: "talk_yui_commands"
         },
@@ -583,6 +605,7 @@
         },
         "clocktower_post_yui": {
             bgId: "bg_clocktower",
+            bgm: "bgm", // 立ち去った後は通常のBGMに戻す
             text: [
                 "冴島「橘先生が立ち去ったな。さて、もう少し周囲を調べてみるか。」"
             ],
@@ -595,7 +618,11 @@
                 { label: "用務員に話を聞く", target: "talk_kenta" },
                 { label: "扉を調べる", target: "clocktower_door" },
                 { label: "図書室へ", target: "goto_library" },
-                { label: "学園長室へ戻る", target: "office_move_commands" }
+                { 
+                    label: "推理する", 
+                    target: "deduction", 
+                    condition: () => state.flags.checkedBookshelf && state.flags.checkedWindow && state.flags.checkedClockDoor 
+                }
             ]
         },
         "talk_kenta": {
@@ -606,7 +633,7 @@
                 "冴島「森下さん、いつもお疲れ様です。……ん？ あそこのハト、随分と怯えているようですね。」",
                 "森下「あぁ、それに気づいたか。最近ハトが夕暮れ時に妙に騒ぐんだよ。あの時計塔の不協和音が鳴り響くときにな。」",
                 "冴島「ハトが騒ぐ……？ 橘先生はここへよく来られるんですか？」",
-                "森下「いや、新任の綺麗などこかの先生がこんな泥臭い場所に来るわけねぇだろ。ただ……ここ数日、時計塔の中に頻繁に入り浸っているのは見たぜ。」",
+                "森下「いや、綺麗な新任の先生がこんな泥臭い場所に来るわけねぇだろ。ただ……ここ数日、時計塔の中に頻繁に入り浸っているのは見たぜ。」",
                 "森下「用もないのに時計の裏の機械をじっと見てるんだ。何を企んでるんだか……。」",
                 "冴島「（ハトが騒ぐのは超音波のせい、そして時計塔に入り浸る橘結衣……。役者が揃ってきたぜ。）」"
             ],
@@ -648,6 +675,7 @@
         },
         "deduction": {
             bgId: "bg_clocktower",
+            bgm: "bgm_tension", // 推理の盛り上がり
             text: [
                 "冴島「よし、新任教師の橘と用務員の森下、そして図書室の証拠……すべてが結びついた。」",
                 "冴島「犯人は時計塔の合鍵を使い、夕暮れ時に作動する超音波発振器を仕掛けた。ハトが騒いだのはその超音波のせいだ。」",
@@ -667,6 +695,7 @@
         "ambush": {
             bgId: "bg_clocktower",
             charId: "ch_homura",
+            bgm: "stop", // 待ち伏せの緊張感のための無音
             text: [
                 "冴島「夕暮れまであと少しだ。ここで張っていれば、犯人が発振器の回収、あるいは次の仕掛けをしに現れるはずだ。」",
                 "ほむら「……やっぱり、ただの実習生じゃなかったんですね。」",
@@ -695,6 +724,7 @@
         "confrontation": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
+            bgm: "bgm_tension", // 犯人との対峙
             text: [
                 "冴島「そこまでだ、橘先生。」",
                 "橘「っ！？ ……だ、誰ですか、人の見学を邪魔する不審者は！」",
@@ -730,22 +760,23 @@
             charId: "ch_yui",
             text: [],
             commands: [
-                { label: "学園長室へ連行する", target: "report_to_principal" }
+                { label: "学園長室へ同行を求める", target: "report_to_principal" }
             ]
         },
         "report_to_principal": {
             bgId: "bg_office",
             charId: "ch_principal",
+            bgm: "bgm", // 対決後の落ち着いたBGM
             text: [
-                "俺は橘先生を伴い、学園長室へ向かった。",
+                "俺は橘先生に同行を願い、学園長室へ向かった。",
                 "冴島「学園長。例の『時計塔の悪魔』の正体と、盗まれた古書をお持ちしました。」",
-                "学園長「おお……！ 本が無事に戻ったのですね。素晴らしい手腕です。……しかし、まさか新任の橘先生、あなたが？」",
+                "学園長「おお……！ 本が無事に戻ったのですね。本当に、ありがとうございます。素晴らしい手腕ですね。……しかし、まさか新任の橘先生、あなたが？」",
                 "橘「……申し訳ありません。学園の隠し財産に目が眩んで……。」",
                 "学園長「……。」",
-                "学園長「本が無事に戻ったのであれば、今回は大事にはしません。警察沙汰にすれば学園の評判にも関わりますからね。」",
-                "学園長「橘先生、あなたには厳重注意と……しばらくの間、実習生のサポート業務に専念していただきます。罪は問いません。」",
+                "学園長「本が無事に戻ったのであれば、今回は大事にはしません。警察沙汰にすれば学園の評判にも関わりますし……あなたにも事情があったのでしょう。」",
+                "学園長「橘先生、あなたには厳重注意と……しばらくの間、実習生のサポート業務に専念していただきます。罪は問いませんから、心を入れ替えてくださいね。」",
                 "橘「……は、はい。寛大なご処置、感謝いたします……。」",
-                "冴島「（やれやれ、太っ腹な学園長だ。まぁ、依頼は達成したから俺には関係ないがな。）」"
+                "冴島「（やれやれ、太っ腹で優しい学園長だ。まぁ、依頼は達成したから俺には関係ないがな。）」"
             ],
             nextScene: "report_to_principal_commands"
         },
@@ -763,7 +794,7 @@
             text: [
                 "数日後。晴れ渡る青空の下、冴島は教壇に立っていた。",
                 "冴島「よし、今日の日本史の講義はここまでだ。質問は……ないな？」",
-                "終会のベルが鳴り、生徒たちが教室を去っていく中、ほむらだけが席に残っていた。",
+                "放課後のチャイムが鳴り、生徒たちが教室を去っていく中、ほむらだけが席に残っていた。",
                 "ほむら「冴島先生。……いえ、探偵の冴島さん。」",
                 "冴島「おっと、教卓の前では先生と呼んでくれよ、お嬢ちゃん。」",
                 "ほむら「ふふ、見事な手際でした。でも、事件が解決したからといって、実習を途中で投げ出すわけにはいきませんよね？」",
@@ -1172,6 +1203,7 @@
             commands: [
                 { label: "セーブ", target: "sys_save" },
                 { label: "ロード", target: "sys_load" },
+                { label: () => state.bgmEnabled ? "BGM: ON" : "BGM: OFF", action: "toggle_bgm" },
                 { label: "UI非表示", action: "hide_ui" },
                 { label: "開発ツール", action: "toggle_dev" },
                 { label: "戻る", action: "close_system" }
@@ -1206,13 +1238,17 @@
         const scene = scenario[sceneId];
         
         // BGMの切り替え処理
-        if (scene.bgm) {
-            if (currentBgmKey !== scene.bgm) {
-                const wasPlaying = !customBgmAudio.paused;
-                customBgmAudio.pause();
+        if (scene.bgm !== undefined) {
+            if (scene.bgm === "stop") {
+                if (customBgmAudio) customBgmAudio.pause();
+                currentBgmKey = "stop";
+            } else if (currentBgmKey !== scene.bgm) {
+                if (customBgmAudio) customBgmAudio.pause();
                 currentBgmKey = scene.bgm;
-                customBgmAudio = bgmAudios[currentBgmKey] || bgmAudios["bgm"];
-                if (wasPlaying && hasInteracted) customBgmAudio.play().catch(e=>{});
+                customBgmAudio = bgmAudios[currentBgmKey];
+                if (state.bgmEnabled && hasInteracted && customBgmAudio) {
+                    customBgmAudio.play().catch(e=>{});
+                }
             }
         }
 
@@ -1305,12 +1341,15 @@
         validCommands.forEach((cmd, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
+            // labelが関数の場合は評価した文字列を使用する（動的ラベル対応）
+            const btnLabel = typeof cmd.label === 'function' ? cmd.label() : cmd.label;
+            
             state.buttons.push({
                 x: startX + col * (btnW + gapX),
                 y: startY + row * (btnH + gapY),
                 w: btnW,
                 h: btnH,
-                label: cmd.label,
+                label: btnLabel,
                 target: cmd.target,
                 action: cmd.action
             });
@@ -1683,6 +1722,16 @@
                 state.uiVisible = false;
                 closeSystemMenu(); 
             }
+            else if (btn.action === "toggle_bgm") {
+                state.bgmEnabled = !state.bgmEnabled;
+                if (state.bgmEnabled) {
+                    if (currentBgmKey !== "stop" && customBgmAudio) customBgmAudio.play().catch(e=>{});
+                } else {
+                    if (customBgmAudio) customBgmAudio.pause();
+                }
+                // ボタンのラベル表示を更新するために再計算
+                calculateButtons(scenario[state.sceneId].commands);
+            }
             else if (btn.action === "close_system") {
                 if (state.pendingLoadSceneId) {
                     let id = state.pendingLoadSceneId;
@@ -1713,7 +1762,7 @@
 
     window.onload = () => {
         loadScene("dummy_start"); // 演出用に空のシーンをセット
-        showTitle("ACT 1", "予兆", "start"); // タイトル演出開始
+        showTitle("ACT 1", "予兆", "start", "jingle"); // タイトル演出とジングル開始
         loop();
     };
 </script>

@@ -300,14 +300,15 @@
         
         if (jingleKey && bgmAudios[jingleKey] && state.bgmEnabled && hasInteracted) {
             bgmAudios[jingleKey].currentTime = 0;
+            bgmAudios[jingleKey].volume = 0.5; // 初期音量
             bgmAudios[jingleKey].play().catch(e=>{});
         }
     }
 
     // --- ゲームステータス ---
     let state = {
-        sceneId: "dummy_start",
-        previousSceneId: "dummy_start",
+        sceneId: "tap_to_start",
+        previousSceneId: "tap_to_start",
         textPages: [],
         currentPage: 0,
         displayedText: "",
@@ -337,6 +338,9 @@
        シナリオデータ
        ========================================= */
     const scenario = {
+        "tap_to_start": {
+            text: [], commands: []
+        },
         "dummy_start": {
             text: [], commands: []
         },
@@ -554,10 +558,10 @@
             bgm: "bgm_tension", // 遭遇時に緊迫感
             text: [
                 "？？？「……ふぅ。これで仕込みは完璧ね。」",
-                "冴島「（あの女性は……最近赴任してきたという女教師の橘結衣だな。鍵を開けて、時計塔から出てきたのか？）」",
+                "冴島「（あの女性は……最近赴任してきたという女教師の橘結衣だな。時計塔の中から出てきたのか？）」",
                 "橘「あら？ そこにいるのは誰かしら？ 姿を見せなさい。」",
                 "冴島「おっと失礼、散歩がてら時計塔を見上げていた実習生の冴島です。」",
-                "橘「実習生？……だらしない身なりね。用がないなら速やかに立ち去りなさい。ここは大人の入る場所ではありません。」"
+                "橘「実習生？……だらしない身なりね。用がないなら速やかに立ち去りなさい。ここは関係者以外立ち入り禁止です。」"
             ],
             nextScene: "clocktower_hide_commands"
         },
@@ -576,7 +580,7 @@
                 "冴島「明日からお世話になる歴史の実習生、冴島です。時計塔が綺麗だったので見とれていまして。」",
                 "橘「私は最近赴任した教師の橘結衣です。実習生としての自覚が足りないようね。用がないなら持ち場に戻りなさい。」",
                 "冴島「橘先生、この時計塔って普段は誰が管理してるんですか？」",
-                "橘「私と、用務員の森下よ。これ以上詮索する必要はありません。早く行きなさい。」"
+                "橘「用務員の森下よ。私はたまたま見回りに来ただけ。これ以上詮索する必要はありません。早く行きなさい。」"
             ],
             nextScene: "clocktower_wait_commands"
         },
@@ -591,9 +595,9 @@
             charId: "ch_yui",
             text: [
                 "冴島「橘先生、時計塔の調査を……いえ、時計塔の中を見学させていただけないでしょうか？」",
-                "橘「だめです。時計塔の鍵を所持しているのは私と用務員だけ。不審な実習生を入れるわけにはいきません。」",
+                "橘「だめです。時計塔の鍵を所持しているのは用務員だけですから、勝手には入れません。不審な実習生を入れるわけにはいきませんね。」",
                 "橘「これ以上、不穏な動きをするなら、実習を即刻打ち切らせます。お引き取りを。」",
-                "冴島「（なるほど。時計塔の鍵を持つのは橘結衣。かなりの高圧的態度……容疑者筆頭だな）」"
+                "冴島「（なるほど。やけにここから遠ざけようとするな。かなりの高圧的態度……容疑者筆頭だな）」"
             ],
             nextScene: "talk_yui_commands"
         },
@@ -678,7 +682,7 @@
             bgm: "bgm_tension", // 推理の盛り上がり
             text: [
                 "冴島「よし、新任教師の橘と用務員の森下、そして図書室の証拠……すべてが結びついた。」",
-                "冴島「犯人は時計塔の合鍵を使い、夕暮れ時に作動する超音波発振器を仕掛けた。ハトが騒いだのはその超音波のせいだ。」",
+                "冴島「犯人はひそかに作った合鍵を使い、夕暮れ時に作動する超音波発振器を仕掛けた。ハトが騒いだのはその超音波のせいだ。」",
                 "冴島「そして、生徒が音を避けている間に、図書室の窓に仕掛けた細いピアノ線を使って……内部から本を抜き取った。」",
                 "冴島「犯人が誰にせよ、まもなく夕暮れ。発振器の作動を確認しに、犯人が時計塔に戻ってくるはずだ。」"
             ],
@@ -1423,6 +1427,19 @@
     }
 
     function draw() {
+        // TAP TO START 画面の描画
+        if (state.sceneId === "tap_to_start") {
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillStyle = (Date.now() % 1000 < 500) ? "#fff" : "transparent";
+            ctx.font = "bold 30px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("TAP TO START", WIDTH / 2, HEIGHT / 2);
+            ctx.textBaseline = "alphabetic";
+            return;
+        }
+
         // タイトルフェード演出中の描画処理
         if (titleState.active) {
             ctx.fillStyle = "#000";
@@ -1567,10 +1584,29 @@
                 }
             } else if (titleState.phase === 2) { // Fade Out
                 titleState.alpha -= dt / 1000;
+                
+                // ジングルのフェードアウト
+                if (titleState.jingle && bgmAudios[titleState.jingle]) {
+                    const jingleAudio = bgmAudios[titleState.jingle];
+                    if (!jingleAudio.paused) {
+                        let newVolume = jingleAudio.volume - (dt / 1000) * 0.5; // フェードに合わせて音量を下げる
+                        if (newVolume <= 0) {
+                            newVolume = 0;
+                            jingleAudio.pause();
+                            jingleAudio.currentTime = 0;
+                        }
+                        jingleAudio.volume = newVolume;
+                    }
+                }
+
                 if (titleState.alpha <= 0) {
                     titleState.alpha = 0;
                     titleState.active = false;
                     state.uiVisible = true;
+                    // ジングル音量を元に戻す
+                    if (titleState.jingle && bgmAudios[titleState.jingle]) {
+                        bgmAudios[titleState.jingle].volume = 0.5;
+                    }
                     loadScene(titleState.nextScene);
                 }
             }
@@ -1618,6 +1654,15 @@
     }
 
     canvas.addEventListener('pointerdown', (e) => {
+        // TAP TO START画面での初回タップ処理
+        if (state.sceneId === "tap_to_start") {
+            if (!hasInteracted) hasInteracted = true;
+            startBGM(); // ここでAudioContextがresumeされる
+            state.sceneId = "dummy_start";
+            showTitle("ACT 1", "予兆", "start", "jingle");
+            return;
+        }
+
         if (titleState.active) return; // 演出中はクリック無効
         if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') return;
 
@@ -1761,8 +1806,7 @@
     });
 
     window.onload = () => {
-        loadScene("dummy_start"); // 演出用に空のシーンをセット
-        showTitle("ACT 1", "予兆", "start", "jingle"); // タイトル演出とジングル開始
+        loadScene("tap_to_start"); // 起動時はTAP TO START画面を表示
         loop();
     };
 </script>

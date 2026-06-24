@@ -1594,8 +1594,9 @@
                             newVolume = 0;
                             jingleAudio.pause();
                             jingleAudio.currentTime = 0;
+                        } else {
+                            jingleAudio.volume = newVolume;
                         }
-                        jingleAudio.volume = newVolume;
                     }
                 }
 
@@ -1603,8 +1604,10 @@
                     titleState.alpha = 0;
                     titleState.active = false;
                     state.uiVisible = true;
-                    // ジングル音量を元に戻す
+                    // ジングルを確実に停止し音量を元に戻す
                     if (titleState.jingle && bgmAudios[titleState.jingle]) {
+                        bgmAudios[titleState.jingle].pause();
+                        bgmAudios[titleState.jingle].currentTime = 0;
                         bgmAudios[titleState.jingle].volume = 0.5;
                     }
                     loadScene(titleState.nextScene);
@@ -1657,7 +1660,10 @@
         // TAP TO START画面での初回タップ処理
         if (state.sceneId === "tap_to_start") {
             if (!hasInteracted) hasInteracted = true;
-            startBGM(); // ここでAudioContextがresumeされる
+            // AudioContextの有効化のみ行い、BGMの自動再生は防ぐ
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
             state.sceneId = "dummy_start";
             showTitle("ACT 1", "予兆", "start", "jingle");
             return;

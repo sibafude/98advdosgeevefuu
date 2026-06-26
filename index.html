@@ -1593,7 +1593,7 @@
                     titleState.timer = 0;
                 }
             } else if (titleState.phase === 1) { // Wait
-                if (titleState.timer >= 3000) { // 3秒待機
+                if (titleState.timer >= 10000) { // 10秒待機
                     titleState.phase = 2;
                     titleState.timer = 0;
                 }
@@ -1684,7 +1684,14 @@
             return;
         }
 
-        if (titleState.active) return; // 演出中はクリック無効
+        if (titleState.active) {
+            if (titleState.phase === 0 || titleState.phase === 1) {
+                titleState.phase = 2;
+            } else if (titleState.phase === 2) {
+                titleState.alpha = 0;
+            }
+            return;
+        }
         if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') return;
 
         if (!hasInteracted) {

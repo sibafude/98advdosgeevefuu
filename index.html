@@ -102,7 +102,7 @@
         "bg_gate": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nSchool+Gate+(Sunset)",
         "bg_gate_morning": "https://placehold.co/720x1280/87ceeb/000?text=Background:\\nSchool+Gate+(Morning)", 
         "bg_office": "https://placehold.co/720x1280/3e2723/FFF?text=Background:\\nPrincipal+Office",
-        "bg_office_morning": "https://placehold.co/720x1280/8b7d6b/FFF?text=Background:\\nPrincipal+Office+(Morning)", // 朝の学園長室追加
+        "bg_office_morning": "https://placehold.co/720x1280/8b7d6b/FFF?text=Background:\\nPrincipal+Office+(Morning)", 
         "bg_library": "https://placehold.co/720x1280/2e2b20/FFF?text=Background:\\nLibrary",
         "bg_clocktower": "https://placehold.co/720x1280/1c2331/FFF?text=Background:\\nClock+Tower",
         "bg_classroom": "https://placehold.co/720x1280/5d4037/FFF?text=Background:\\nClassroom", 
@@ -142,7 +142,7 @@
     let defaultBgmInterval = null;
     let currentNote = 0;
 
-    // 複数BGM対応 (mp3がない場合はm4aを試す)
+    // 複数BGM対応
     const bgmKeys = ["bgm", "bgm_tension", "bgm_night", "jingle"];
     const bgmAudios = {};
 
@@ -1389,7 +1389,7 @@
                 state.logScrollY = state.maxLogScroll;
             }
 
-            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
             ctx.fillStyle = "#fff";
@@ -1412,7 +1412,7 @@
                         const testLine = line + words[k];
                         const metrics = ctx.measureText(testLine);
                         if (metrics.width > maxWidth && k > 0) {
-                            if (currentY > 0 && currentY < HEIGHT) {
+                            if (currentY > -lineHeight && currentY < HEIGHT) {
                                 ctx.fillText(line, padX, currentY);
                             }
                             line = words[k];
@@ -1421,7 +1421,7 @@
                             line = testLine;
                         }
                     }
-                    if (currentY > 0 && currentY < HEIGHT) {
+                    if (currentY > -lineHeight && currentY < HEIGHT) {
                         ctx.fillText(line, padX, currentY);
                     }
                     currentY += lineHeight;
@@ -1430,19 +1430,8 @@
             }
 
             // スクロール限界の計算
-            state.maxLogScroll = Math.min(0, HEIGHT - currentY + state.logScrollY - 100);
-
-            // 閉じるボタン（右下）
-            const closeBtn = { x: WIDTH - 150, y: HEIGHT - 80, w: 130, h: 50 };
-            ctx.fillStyle = "#444";
-            ctx.fillRect(closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h);
-            ctx.strokeStyle = "#fff";
-            ctx.strokeRect(closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h);
-            ctx.fillStyle = "#fff";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText("閉じる", closeBtn.x + closeBtn.w / 2, closeBtn.y + closeBtn.h / 2);
-            ctx.textBaseline = "alphabetic";
+            const contentHeight = currentY - state.logScrollY - 50;
+            state.maxLogScroll = Math.min(0, HEIGHT - contentHeight - 100);
 
             return; // ログ表示中はここで描画終了
         }
@@ -1588,7 +1577,7 @@
                 if (titleState.timer >= 4000) { // 開始から4秒でフェードアウト開始
                     titleState.phase = 2;
                 }
-            } else if (titleState.phase === 2) { // Fade Out (4秒かけてフェード)
+            } else if (titleState.phase === 2) { // Fade Out (4秒かけてフェード、合計8秒)
                 // 4秒間(timerが4000から8000の間)でalphaを1から0にする
                 titleState.alpha = 1 - ((titleState.timer - 4000) / 4000);
                 
@@ -1623,7 +1612,35 @@
             return;
         }
 
-        if (state.isTyping && !state.showCommands) {
+        // ログの慣性スクロールとバネ処理
+        if (state.showLog) {
+            if (!isDraggingLog) {
+                if (Math.abs(logVelocityY) > 0.1) {
+                    state.logScrollY += logVelocityY;
+                    logVelocityY *= 0.95; // 減衰係数
+                } else {
+                    logVelocityY = 0;
+                }
+
+                // スクロール限界でのバネ処理
+                if (state.logScrollY > 0) {
+                    state.logScrollY += (0 - state.logScrollY) * 0.2;
+                    if (state.logScrollY < 0.5) state.logScrollY = 0;
+                } else if (state.maxLogScroll !== undefined && state.logScrollY < state.maxLogScroll) {
+                    state.logScrollY += (state.maxLogScroll - state.logScrollY) * 0.2;
+                    if (state.logScrollY > state.maxLogScroll - 0.5) state.logScrollY = state.maxLogScroll;
+                }
+            } else {
+                // ドラッグ中の限界超え抵抗
+                if (state.logScrollY > 0) {
+                    state.logScrollY -= (state.logScrollY) * 0.1;
+                } else if (state.maxLogScroll !== undefined && state.logScrollY < state.maxLogScroll) {
+                    state.logScrollY += (state.maxLogScroll - state.logScrollY) * 0.1;
+                }
+            }
+        }
+
+        if (state.isTyping && !state.showCommands && !state.showLog) {
             textTimer += dt;
             if (textTimer >= TEXT_SPEED) {
                 textTimer = 0;
@@ -1649,6 +1666,9 @@
     let isDraggingLog = false;
     let logStartY = 0;
     let logStartScrollY = 0;
+    let logLastY = 0;
+    let logVelocityY = 0;
+    let logDragDist = 0;
 
     function getPointerPos(e) {
         const rect = canvas.getBoundingClientRect();
@@ -1708,15 +1728,12 @@
         const pos = getPointerPos(e);
 
         if (state.showLog) {
-            const closeBtn = { x: WIDTH - 150, y: HEIGHT - 80, w: 130, h: 50 };
-            if (pos.x >= closeBtn.x && pos.x <= closeBtn.x + closeBtn.w && pos.y >= closeBtn.y && pos.y <= closeBtn.y + closeBtn.h) {
-                state.showLog = false;
-                playSound('cancel');
-            } else {
-                isDraggingLog = true;
-                logStartY = pos.y;
-                logStartScrollY = state.logScrollY;
-            }
+            isDraggingLog = true;
+            logStartY = pos.y;
+            logLastY = pos.y;
+            logStartScrollY = state.logScrollY;
+            logVelocityY = 0;
+            logDragDist = 0;
             return;
         }
 
@@ -1783,9 +1800,11 @@
     canvas.addEventListener('pointermove', (e) => {
         if (state.showLog && isDraggingLog) {
             const pos = getPointerPos(e);
-            const deltaY = pos.y - logStartY;
-            state.logScrollY = logStartScrollY + deltaY;
-            if (state.logScrollY > 0) state.logScrollY = 0;
+            const deltaY = pos.y - logLastY;
+            logDragDist += Math.abs(deltaY);
+            logVelocityY = deltaY;
+            state.logScrollY += deltaY;
+            logLastY = pos.y;
         }
     });
 
@@ -1794,6 +1813,10 @@
 
         if (state.showLog) {
             isDraggingLog = false;
+            if (logDragDist < 10) { // 移動距離が少なければタップ判定で閉じる
+                state.showLog = false;
+                playSound('cancel');
+            }
             return;
         }
 

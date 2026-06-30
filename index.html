@@ -92,7 +92,8 @@
     
     const LAYOUT = {
         window: { x: 0, y: 1000, w: 720, h: 280 },
-        sysBtn: { x: 720 - 180, y: 1280 - 65, w: 140, h: 45 } 
+        sysBtn: { x: 720 - 180, y: 1280 - 65, w: 140, h: 45 },
+        logBtn: { x: 720 - 180 - 120, y: 1280 - 65, w: 100, h: 45 } // ログボタン追加
     };
 
     // --- アセット管理 ---
@@ -101,6 +102,7 @@
         "bg_gate": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nSchool+Gate+(Sunset)",
         "bg_gate_morning": "https://placehold.co/720x1280/87ceeb/000?text=Background:\\nSchool+Gate+(Morning)", 
         "bg_office": "https://placehold.co/720x1280/3e2723/FFF?text=Background:\\nPrincipal+Office",
+        "bg_office_morning": "https://placehold.co/720x1280/8b7d6b/FFF?text=Background:\\nPrincipal+Office+(Morning)", // 朝の学園長室追加
         "bg_library": "https://placehold.co/720x1280/2e2b20/FFF?text=Background:\\nLibrary",
         "bg_clocktower": "https://placehold.co/720x1280/1c2331/FFF?text=Background:\\nClock+Tower",
         "bg_classroom": "https://placehold.co/720x1280/5d4037/FFF?text=Background:\\nClassroom", 
@@ -323,6 +325,7 @@
         uiVisible: true,
         showCommands: false, 
         sysBtnActive: false,
+        logBtnActive: false, // ログボタン状態
         buttons: [],
         activeButtonIndex: -1,
         lastLineEndX: 0, 
@@ -330,7 +333,11 @@
         flags: {}, 
         gameOverCount: 0, 
         pendingLoadSceneId: null,
-        bgmEnabled: true // BGMのオンオフ状態を管理
+        bgmEnabled: true, // BGMのオンオフ状態を管理
+        log: [], // 会話ログの配列
+        showLog: false, // ログ画面表示フラグ
+        logScrollY: 0, // ログのスクロール位置
+        maxLogScroll: 0 // スクロールの最大値
     };
 
     let stateBackup = null; 
@@ -371,7 +378,7 @@
             nextScene: "intro_flashback"
         },
         "intro_flashback": {
-            bgId: "bg_office", 
+            bgId: "bg_office_morning", 
             charId: "ch_principal",
             text: [
                 "冴島「（事の始まりは今朝のことだ……。）」",
@@ -741,7 +748,8 @@
             charId: "ch_homura",
             text: [
                 "ほむら「……お邪魔します。随分と殺風景で、埃っぽい場所ですね。」",
-                "冴島「お出ましだな。で、その後ろに隠れるように立っているのが、例の親友ってわけか。」"
+                "冴島「お出ましだな。親友のために単身こんな怪しい場所に乗り込んでくるとは、勇敢で行動力のあるお嬢ちゃんだ。」",
+                "冴島「で、その後ろに隠れるように立っているのが、例の親友ってわけか。」"
             ],
             nextScene: "introduce_shiori"
         },
@@ -753,9 +761,9 @@
                 "冴島「（眼鏡をかけた、大人しそうな子だな。ほむら嬢とは正反対のタイプに見えるが……）」",
                 "ほむら「栞は成績学年トップの才女なんです。でも最近、様子がおかしくて……私が無理やり連れてきました。」",
                 "冴島「なるほど。で、命が狙われているってのはどういうことだ？」",
-                "栞「……私の父は、外務省で働く外交官です。最近、父が関わっているある条約の交渉に関して、怪しい影がちらついていて……」",
+                "栞「……私の父は、外務省で働く外交官です。父の仕事の詳しい内容は私にはわからないのですが、最近すごくピリピリしていて……」",
                 "栞「数日前から、登下校の際に黒い車や、見知らぬ男たちに後をつけられている気がするんです。」",
-                "栞「父の仕事の妨害をするために、私が誘拐されるのではないかと……。」"
+                "栞「もしかしたら、父の仕事関係で誰かに狙われているのではないかと……。」"
             ],
             nextScene: "shiori_request_commands"
         },
@@ -773,8 +781,9 @@
             charId: "ch_shiori",
             text: [
                 "冴島「お父さんから何か聞いていないか？ 危険だから一人で出歩くな、とか。」",
-                "栞「はい……。父はいつも以上に神経質になっていて、ボディガードをつけると言っていたのですが、大げさにしたくなくて断ってしまったんです。」",
-                "冴島「なるほどな。国際的な陰謀の火の粉が、女子高生に降りかかろうとしているわけか。」"
+                "栞「はい……。だから、今日帰ったら、父にちゃんと話して護衛をつけてもらおうと思います。」",
+                "冴島「いや、やめておいた方がいい。学園の外ならともかく、プロのボディガードが学校の中まで付いて回るわけにはいかないだろう。」",
+                "ほむら「そうよ栞。だから、学園の中にも自由に入れる『先生』が必要なの。」"
             ],
             nextScene: "shiori_request_commands"
         },
@@ -782,7 +791,7 @@
             bgId: "bg_warehouse",
             charId: "ch_homura",
             text: [
-                "冴島「わかった。その依頼、引き受けよう。俺は実習生として学園内でも動けるからな、好都合だ。」",
+                "冴島「そういうことだ。その依頼、俺が引き受けよう。俺なら実習生として学園内でも怪しまれずに動けるからな。」",
                 "ほむら「ありがとうございます。冴島さんならそう言ってくれると思っていました。」",
                 "冴島「おいおい、買い被りすぎだぜ。俺の護衛料は安くないぞ？」",
                 "ほむら「ふふっ。実習生の単位の査定、私が学園長に『良い報告』をしておきますから、それで手を打ってください。」",
@@ -1186,6 +1195,13 @@
             state.textIndex = 0;
             state.isTyping = true;
         }
+
+        // ログの記録
+        if (state.textPages.length > 0 && state.textPages[0] !== "") {
+            if (state.log.length === 0 || state.log[state.log.length - 1] !== state.textPages[0]) {
+                state.log.push(state.textPages[0]);
+            }
+        }
         
         textTimer = 0;
         calculateButtons(scene.commands);
@@ -1365,6 +1381,72 @@
             return; // 演出中は通常の描画をスキップ
         }
 
+        // ログ画面の描画
+        if (state.showLog) {
+            // スクロール補正
+            if (state.logScrollY > 0) state.logScrollY = 0;
+            if (state.maxLogScroll !== undefined && state.logScrollY < state.maxLogScroll) {
+                state.logScrollY = state.maxLogScroll;
+            }
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+
+            let currentY = 50 + state.logScrollY;
+            const padX = 30;
+            const maxWidth = WIDTH - padX * 2;
+            const lineHeight = 36;
+
+            for (let i = 0; i < state.log.length; i++) {
+                const text = state.log[i];
+                const lines = text.split('\n');
+                for (let j = 0; j < lines.length; j++) {
+                    let line = "";
+                    const words = lines[j].split('');
+                    for (let k = 0; k < words.length; k++) {
+                        const testLine = line + words[k];
+                        const metrics = ctx.measureText(testLine);
+                        if (metrics.width > maxWidth && k > 0) {
+                            if (currentY > 0 && currentY < HEIGHT) {
+                                ctx.fillText(line, padX, currentY);
+                            }
+                            line = words[k];
+                            currentY += lineHeight;
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    if (currentY > 0 && currentY < HEIGHT) {
+                        ctx.fillText(line, padX, currentY);
+                    }
+                    currentY += lineHeight;
+                }
+                currentY += lineHeight / 2; // ログ間の余白
+            }
+
+            // スクロール限界の計算
+            state.maxLogScroll = Math.min(0, HEIGHT - currentY + state.logScrollY - 100);
+
+            // 閉じるボタン（右下）
+            const closeBtn = { x: WIDTH - 150, y: HEIGHT - 80, w: 130, h: 50 };
+            ctx.fillStyle = "#444";
+            ctx.fillRect(closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h);
+            ctx.strokeStyle = "#fff";
+            ctx.strokeRect(closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h);
+            ctx.fillStyle = "#fff";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("閉じる", closeBtn.x + closeBtn.w / 2, closeBtn.y + closeBtn.h / 2);
+            ctx.textBaseline = "alphabetic";
+
+            return; // ログ表示中はここで描画終了
+        }
+
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -1406,6 +1488,7 @@
                 ctx.strokeRect(win.x, win.y, win.w, win.h);
             }
 
+            // システムボタン描画
             const sysBtn = LAYOUT.sysBtn;
             ctx.fillStyle = state.sysBtnActive ? "#ffeb3b" : "#ccc";
             ctx.font = "bold 22px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
@@ -1414,6 +1497,18 @@
             ctx.shadowColor = "#000";
             ctx.shadowBlur = 4;
             ctx.fillText("システム", sysBtn.x + sysBtn.w / 2, sysBtn.y + sysBtn.h / 2);
+            ctx.shadowBlur = 0;
+            ctx.textBaseline = "alphabetic";
+
+            // ログボタン描画
+            const logBtn = LAYOUT.logBtn;
+            ctx.fillStyle = state.logBtnActive ? "#ffeb3b" : "#ccc";
+            ctx.font = "bold 22px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.shadowColor = "#000";
+            ctx.shadowBlur = 4;
+            ctx.fillText("ログ", logBtn.x + logBtn.w / 2, logBtn.y + logBtn.h / 2);
             ctx.shadowBlur = 0;
             ctx.textBaseline = "alphabetic";
 
@@ -1551,6 +1646,9 @@
        入力処理
        ========================================= */
     let hasInteracted = false;
+    let isDraggingLog = false;
+    let logStartY = 0;
+    let logStartScrollY = 0;
 
     function getPointerPos(e) {
         const rect = canvas.getBoundingClientRect();
@@ -1609,6 +1707,19 @@
 
         const pos = getPointerPos(e);
 
+        if (state.showLog) {
+            const closeBtn = { x: WIDTH - 150, y: HEIGHT - 80, w: 130, h: 50 };
+            if (pos.x >= closeBtn.x && pos.x <= closeBtn.x + closeBtn.w && pos.y >= closeBtn.y && pos.y <= closeBtn.y + closeBtn.h) {
+                state.showLog = false;
+                playSound('cancel');
+            } else {
+                isDraggingLog = true;
+                logStartY = pos.y;
+                logStartScrollY = state.logScrollY;
+            }
+            return;
+        }
+
         if (!state.uiVisible) {
             state.uiVisible = true;
             return;
@@ -1617,6 +1728,12 @@
         const sysBtn = LAYOUT.sysBtn;
         if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
             state.sysBtnActive = true;
+            return;
+        }
+
+        const logBtn = LAYOUT.logBtn;
+        if (pos.x >= logBtn.x && pos.x <= logBtn.x + logBtn.w && pos.y >= logBtn.y && pos.y <= logBtn.y + logBtn.h) {
+            state.logBtnActive = true;
             return;
         }
 
@@ -1642,6 +1759,11 @@
             else if (state.currentPage < state.textPages.length - 1) {
                 state.currentPage++;
                 state.fullText = state.textPages[state.currentPage];
+                // --- ログ追加 ---
+                if (state.log.length === 0 || state.log[state.log.length - 1] !== state.fullText) {
+                    state.log.push(state.fullText);
+                }
+                // -------------
                 state.displayedText = "";
                 state.textIndex = 0;
                 state.isTyping = true;
@@ -1658,8 +1780,23 @@
         }
     });
 
+    canvas.addEventListener('pointermove', (e) => {
+        if (state.showLog && isDraggingLog) {
+            const pos = getPointerPos(e);
+            const deltaY = pos.y - logStartY;
+            state.logScrollY = logStartScrollY + deltaY;
+            if (state.logScrollY > 0) state.logScrollY = 0;
+        }
+    });
+
     canvas.addEventListener('pointerup', (e) => {
         if (titleState.active) return;
+
+        if (state.showLog) {
+            isDraggingLog = false;
+            return;
+        }
+
         if (!state.uiVisible) return;
 
         if (state.sysBtnActive) {
@@ -1678,6 +1815,14 @@
             } else {
                 openSystemMenu();
             }
+            return;
+        }
+
+        if (state.logBtnActive) {
+            state.logBtnActive = false;
+            playSound('select');
+            state.showLog = true;
+            state.logScrollY = -99999; // 開いた時は一番最新のログを表示するよう補正
             return;
         }
 
@@ -1738,7 +1883,9 @@
 
     canvas.addEventListener('pointerleave', () => {
         state.sysBtnActive = false;
+        state.logBtnActive = false;
         state.activeButtonIndex = -1;
+        isDraggingLog = false;
     });
 
     window.onload = () => {

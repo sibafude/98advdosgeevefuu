@@ -93,7 +93,7 @@
     const LAYOUT = {
         window: { x: 0, y: 1000, w: 720, h: 280 },
         sysBtn: { x: 720 - 180, y: 1280 - 65, w: 140, h: 45 },
-        logBtn: { x: 720 - 180 - 120, y: 1280 - 65, w: 100, h: 45 } // ログボタン追加
+        logBtn: { x: 720 - 180 - 120, y: 1280 - 65, w: 100, h: 45 } 
     };
 
     // --- アセット管理 ---
@@ -325,7 +325,7 @@
         uiVisible: true,
         showCommands: false, 
         sysBtnActive: false,
-        logBtnActive: false, // ログボタン状態
+        logBtnActive: false, 
         buttons: [],
         activeButtonIndex: -1,
         lastLineEndX: 0, 
@@ -333,11 +333,12 @@
         flags: {}, 
         gameOverCount: 0, 
         pendingLoadSceneId: null,
-        bgmEnabled: true, // BGMのオンオフ状態を管理
-        log: [], // 会話ログの配列
-        showLog: false, // ログ画面表示フラグ
-        logScrollY: 0, // ログのスクロール位置
-        maxLogScroll: 0 // スクロールの最大値
+        bgmEnabled: true,
+        log: [], 
+        showLog: false, 
+        logScrollY: 0, 
+        maxLogScroll: 0,
+        forceLogScrollBottom: false // ログ開閉時のスクロール補正フラグ
     };
 
     let stateBackup = null; 
@@ -369,7 +370,7 @@
                 "ほむら「……というわけで、夕暮れ時になると不協和音が鳴り響き、誰もいなくなった隙に本が消えるんです。」",
                 "冴島「なるほど。それが噂の『時計塔の悪魔』ってやつか。」",
                 "ほむら「はい。図書委員として放っては置けません。冴島先生も、歴史の実習生ならこの学園の歴史を調べるついでに、協力してくれませんか？」",
-                "冴島「（やれやれ、この図書委員のお嬢ちゃんは随分と熱心だ。俺が探偵だってことは、当然バレてないがな。）」"
+                "冴島（やれやれ、この図書委員のお嬢ちゃんは随分と熱心だ。俺が探偵だってことは、当然バレてないがな。）"
             ],
             onLoad: () => { 
                 state.flags = {}; 
@@ -381,12 +382,12 @@
             bgId: "bg_office_morning", 
             charId: "ch_principal",
             text: [
-                "冴島「（事の始まりは今朝のことだ……。）」",
-                "冴島「（俺は依頼を受け、歴史の実習生としてこの聖蘭学園に潜入した。）」",
+                "冴島（事の始まりは今朝のことだ……。）",
+                "冴島（俺は依頼を受け、歴史の実習生としてこの聖蘭学園に潜入した。）",
                 "学園長「お待ちしておりました。探偵の冴島さんですね。」",
-                "冴島「（上品で温厚そうな学園長から直々に依頼されたのは、まさにその『時計塔の悪魔』と古書盗難事件の調査だった。）」",
+                "冴島（上品で温厚そうな学園長から直々に依頼されたのは、まさにその『時計塔の悪魔』と古書盗難事件の調査だった。）",
                 "学園長「警察沙汰になれば学園の評判に関わります。どうか極秘裏に真相を暴き、本を取り戻してください。」",
-                "冴島「（……というわけで、俺は事件の舞台である図書室へやって来たわけだ。）」"
+                "冴島（……というわけで、俺は事件の舞台である図書室へやって来たわけだ。）"
             ],
             nextScene: "intro_end"
         },
@@ -394,7 +395,7 @@
             bgId: "bg_library",
             charId: "ch_homura",
             text: [
-                "冴島「（挨拶回りの最中にこの熱心な図書委員、ほむら嬢に捕まって現状を聞かされている、と。）」",
+                "冴島（挨拶回りの最中にこの熱心な図書委員、ほむら嬢に捕まって現状を聞かされている、と。）",
                 "冴島「わかったよ、ほむら嬢。実習の合間に少し調べてみよう。」",
                 "ほむら「ありがとうございます！ 先生ならそう言ってくれると思ってました。」",
                 "冴島「さて、消えた本の周辺をじっくり調べてみるか……。」"
@@ -445,7 +446,7 @@
         },
         "clocktower_enter": {
             bgId: "bg_clocktower",
-            bgm: "stop", // 時計塔の入り口は不気味な静けさ
+            bgm: "stop", 
             text: [
                 "冴島「ここが時計塔の入り口か。立派なアンティーク調の扉だが、しっかりと鍵がかかっているな。」",
                 "冴島「ん……？ 誰か近づいてくるな。」"
@@ -463,10 +464,10 @@
         "clocktower_hide": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
-            bgm: "bgm_tension", // 遭遇時に緊迫感
+            bgm: "bgm_tension", 
             text: [
                 "？？？「……ふぅ。これで仕込みは完璧ね。」",
-                "冴島「（あの女性は……今朝挨拶した、新任教師の橘結衣だな。時計塔の中から出てきたのか？）」",
+                "冴島（あの女性は……今朝挨拶した、新任教師の橘結衣だな。時計塔の中から出てきたのか？）",
                 "橘「あら？ そこにいるのは誰かしら？ 姿を見せなさい。」",
                 "冴島「おっと失礼、散歩がてら時計塔を見上げていた実習生の冴島です。」",
                 "橘「実習生の冴島先生ね。だらしない身なり。用がないなら速やかに立ち去りなさい。ここは関係者以外立ち入り禁止です。」"
@@ -505,7 +506,7 @@
                 "冴島「橘先生、時計塔の調査を……いえ、時計塔の中を見学させていただけないでしょうか？」",
                 "橘「だめです。時計塔の鍵を所持しているのは用務員だけですから、勝手には入れません。不審な実習生を入れるわけにはいきませんね。」",
                 "橘「これ以上、不穏な動きをするなら、学園長に報告して実習の評価を下げさせてもらいます。お引き取りを。」",
-                "冴島「（なるほど。やけにここから遠ざけようとするな。かなりの高圧的態度……容疑者筆頭だな）」"
+                "冴島（なるほど。やけにここから遠ざけようとするな。かなりの高圧的態度……容疑者筆頭だな）"
             ],
             nextScene: "talk_yui_commands"
         },
@@ -517,7 +518,7 @@
         },
         "clocktower_post_yui": {
             bgId: "bg_clocktower",
-            bgm: "bgm", // 立ち去った後は通常のBGMに戻す
+            bgm: "bgm", 
             text: [
                 "冴島「橘先生が立ち去ったな。さて、もう少し周囲を調べてみるか。」"
             ],
@@ -548,7 +549,7 @@
                 "冴島「ハトが騒ぐ……？ 橘先生はここへよく来られるんですか？」",
                 "森下「いや、綺麗な新任の先生がこんな泥臭い場所に来るわけねぇだろ。ただ……ここ数日、時計塔の中に頻繁に入り浸っているのは見たぜ。」",
                 "森下「用もないのに時計の裏の機械をじっと見てるんだ。何を企んでるんだか……。」",
-                "冴島「（ハトが騒ぐのは超音波のせい、そして時計塔に入り浸る橘結衣……。役者が揃ってきたぜ。）」"
+                "冴島（ハトが騒ぐのは超音波のせい、そして時計塔に入り浸る橘結衣……。役者が揃ってきたぜ。）"
             ],
             nextScene: "talk_kenta_commands"
         },
@@ -573,8 +574,8 @@
         "need_more_evidence": {
             bgId: "bg_clocktower",
             text: [
-                "冴島「（いや、まだ断片的な情報ばかりだ。トリックを完全に暴くには、証拠がもっと必要だな……）」",
-                "冴島「（確か、消えた古書があった『図書室の本棚』と『窓際』、それにこの『時計塔の扉』を調べれば何か分かるはずだ。）」"
+                "冴島（いや、まだ断片的な情報ばかりだ。トリックを完全に暴くには、証拠がもっと必要だな……）",
+                "冴島（確か、消えた古書があった『図書室の本棚』と『窓際』、それにこの『時計塔の扉』を調べれば何か分かるはずだ。）"
             ],
             nextScene: "clocktower_post_yui_commands"
         },
@@ -588,7 +589,7 @@
         },
         "deduction": {
             bgId: "bg_clocktower",
-            bgm: "bgm_tension", // 推理の盛り上がり
+            bgm: "bgm_tension", 
             text: [
                 "冴島「よし、新任教師の橘と用務員の森下、そして図書室の証拠……すべてが結びついた。」",
                 "冴島「犯人はひそかに作った合鍵を使い、夕暮れ時に作動する超音波発振器を仕掛けた。ハトが騒いだのはその超音波のせいだ。」",
@@ -608,13 +609,13 @@
         "ambush": {
             bgId: "bg_clocktower",
             charId: "ch_homura",
-            bgm: "stop", // 待ち伏せの緊張感のための無音
+            bgm: "stop", 
             text: [
                 "冴島「夕暮れまであと少しだ。ここで張っていれば、犯人が発振器の回収、あるいは次の仕掛けをしに現れるはずだ。」",
                 "ほむら「……やっぱり、ただの実習生じゃなかったんですね。」",
                 "冴島「おっと、ほむら嬢。危ないから帰った方がいいぜ。」",
                 "ほむら「私も図書委員として、本を盗んだ犯人の顔を見ておきたいんです。邪魔はしませんから。」",
-                "冴島「……やれやれ、頑固なお嬢ちゃんだ。足音を忍ばせな。来るぜ……」"
+                "冴島（やれやれ、頑固なお嬢ちゃんだ。足音を忍ばせな。来るぜ……）"
             ],
             nextScene: "culprit_appears"
         },
@@ -623,7 +624,7 @@
             text: [
                 "カチャ……カチャ……と、重々しい静寂の中に鍵を回す細い金属音が響く。",
                 "ゆっくりと時計塔の扉が開き、人影が内部へ滑り込んでいく……。",
-                "冴島「（やはり来たか。足音を立てずに踏み込むぞ……！）」"
+                "冴島（やはり来たか。足音を立てずに踏み込むぞ……！）"
             ],
             nextScene: "culprit_appears_commands"
         },
@@ -637,7 +638,7 @@
         "confrontation": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
-            bgm: "bgm_tension", // 犯人との対峙
+            bgm: "bgm_tension", 
             text: [
                 "冴島「そこまでだ、橘先生。」",
                 "橘「っ！？ ……だ、誰ですか、人の見学を邪魔する不審者は！」",
@@ -664,7 +665,7 @@
                 "冴島「あんたが狙っていたのは、あの古書自体か？……いや、あの古書に隠されている『何か』だな？」",
                 "橘「くっ……！ まさか、ただの歴史実習生にここまで見破られるなんて……。」",
                 "橘「……ええ、その通りよ。あの古書には、どうしても私が個人的に調べたい内容があったの。だから盗み出したわ。」",
-                "冴島「（個人的な理由……？ いや、まだ何か隠しているような目をしているな。）」",
+                "冴島（個人的な理由……？ いや、まだ何か隠しているような目をしているな。）",
                 "冴島「悪いな。あんたの悪魔のショーは、これでおしまいだ。」"
             ],
             nextScene: "truth_commands"
@@ -680,7 +681,7 @@
         "report_to_principal": {
             bgId: "bg_office",
             charId: "ch_principal",
-            bgm: "bgm", // 対決後の落ち着いたBGM
+            bgm: "bgm", 
             text: [
                 "俺は橘先生に同行を願い、学園長室へ向かった。",
                 "冴島「学園長。例の『時計塔の悪魔』の正体と、盗まれた古書をお持ちしました。」",
@@ -690,7 +691,7 @@
                 "学園長「本が無事に戻ったのであれば、今回は大事にはしません。警察沙汰にすれば学園の評判にも関わりますし……あなたにも事情があったのでしょう。」",
                 "学園長「橘先生、あなたには厳重注意と……罰として、１ヶ月間時計塔の掃除をしていただきます。警察には届けませんから、心を入れ替えてくださいね。」",
                 "橘「……は、はい。寛大なご処置、感謝いたします……。」",
-                "冴島「（やれやれ、太っ腹で優しい学園長だ。まぁ、依頼は達成したから俺には関係ないがな。）」"
+                "冴島（やれやれ、太っ腹で優しい学園長だ。まぁ、依頼は達成したから俺には関係ないがな。）"
             ],
             nextScene: "report_to_principal_commands"
         },
@@ -758,7 +759,7 @@
             charId: "ch_shiori", 
             text: [
                 "栞「は、はじめまして……。水無月 栞（みなづき しおり）と申します。」",
-                "冴島「（眼鏡をかけた、大人しそうな子だな。ほむら嬢とは正反対のタイプに見えるが……）」",
+                "冴島（眼鏡をかけた、大人しそうな子だな。ほむら嬢とは正反対のタイプに見えるが……）",
                 "ほむら「栞は成績学年トップの才女なんです。でも最近、様子がおかしくて……私が無理やり連れてきました。」",
                 "冴島「なるほど。で、命が狙われているってのはどういうことだ？」",
                 "栞「……私の父は、外務省で働く外交官です。父の仕事の詳しい内容は私にはわからないのですが、最近すごくピリピリしていて……」",
@@ -825,7 +826,7 @@
                 "栞「おはようございます……冴島先生。」",
                 "冴島「顔色が少し悪いな。昨日はよく眠れなかったか？」",
                 "栞「はい……。帰り道も、なんとなく誰かに見られているような気がして……。」",
-                "冴島「（やはり、奴らはもうすぐそこまで来ているな……。）」",
+                "冴島（やはり、奴らはもうすぐそこまで来ているな……。）",
                 "冴島「心配するな。学園内なら俺も目を光らせておける。……ん？」"
             ],
             nextScene: "next_morning"
@@ -840,7 +841,8 @@
                 "ほむら「栞っ！ ちょっと、離しなさいよ！」",
                 "ほむらが身の危険も顧みず、栞を掴む男に飛びかかろうとする！",
                 "男「邪魔だガキが！」",
-                "冴島「ほむら嬢、下がるんだ！（まずい、連中力ずくで連れ去る気か！）」"
+                "冴島「ほむら嬢、下がるんだ！」",
+                "冴島（まずい、連中力ずくで連れ去る気か！）"
             ],
             nextScene: "next_morning_commands"
         },
@@ -856,7 +858,7 @@
         "kidnap_fail_1": {
             bgId: "ev_kidnap",
             text: [
-                "冴島「（車の前に出て、逃げ道を塞ぐ！）」",
+                "冴島（車の前に出て、逃げ道を塞ぐ！）",
                 "俺が道路に飛び出した瞬間、運転席の男が躊躇なくアクセルを踏み込んだ。",
                 "冴島「なっ……！？」",
                 "重い衝撃と共に俺の体は弾き飛ばされ、地面に叩きつけられた。薄れゆく意識の中で、走り去る車のスキール音だけが響いていた……。"
@@ -877,7 +879,7 @@
         "kidnap_success_1": {
             bgId: "ev_kidnap",
             text: [
-                "冴島「（ちんたら叫んでる暇はねえ！）」",
+                "冴島（ちんたら叫んでる暇はねえ！）",
                 "俺は全速力で駆け出し、栞の腕を掴もうとしていた男の一人に思いきり体当たりした！",
                 "男「ぐあっ！？ てめえ、何者だ！」",
                 "冴島「聖蘭学園の歴史教師さ。生徒の遅刻指導には厳しいんでね。」",
@@ -896,7 +898,7 @@
         "kidnap_fail_3": {
             bgId: "ev_kidnap",
             text: [
-                "冴島「（下段を崩す！）」",
+                "冴島（下段を崩す！）",
                 "俺は鋭く足払いを仕掛けたが、男はそれを読んでいたかのように後方に飛び退いた。",
                 "体勢が崩れた俺の背中に、強烈な電流の痛みが走る。",
                 "冴島「がはっ……！」",
@@ -907,7 +909,7 @@
         "kidnap_success_2": {
             bgId: "ev_kidnap",
             text: [
-                "冴島「（その手には乗らねえよ！）」",
+                "冴島（その手には乗らねえよ！）",
                 "俺はスタンガンを突き出してくる腕の軌道を紙一重でかわし、そのまま男の手首を極め上げた。",
                 "男「ぎゃああっ！」",
                 "骨が軋む音とともにスタンガンが地面に落ちる。俺は栞を男の手から引き離し、背後に庇った。",
@@ -958,7 +960,7 @@
                 "そこには、写真と全く同じ紋章のメダルが揺れていた。",
                 "栞「これ、私が子供の頃に亡くなった母の形見なんです。最近になって急に、父から『絶対に肌身離さず持っていなさい』と渡されて……」",
                 "栞「母の母国のもので、母もずっと受け継いできた大事なメダルだそうです。」",
-                "冴島「（母親の母国……。それが今回の件と何か繋がりがあるのか……？）」",
+                "冴島（母親の母国……。それが今回の件と何か繋がりがあるのか……？）",
                 "栞「父はその国の外交官なんです。服の中に入れていたので、誰にも見せていません……。ほむらちゃんにも。」",
                 "冴島「なるほど。連中の狙いは誘拐そのものじゃなく、このメダルか。……あるいは両方か。」",
                 "冴島「栞嬢、そのメダルは君にとって大事なものだ、しっかり持っていてくれ。俺はこの写真のコピーをもらって、知り合いに心当たりを探らせてみる。」",
@@ -1168,6 +1170,7 @@
                 if (customBgmAudio) customBgmAudio.pause();
                 currentBgmKey = scene.bgm;
                 customBgmAudio = bgmAudios[currentBgmKey];
+                if (customBgmAudio) customBgmAudio.currentTime = 0; // 毎回最初から再生
                 if (state.bgmEnabled && hasInteracted && customBgmAudio) {
                     customBgmAudio.play().catch(e=>{});
                 }
@@ -1381,61 +1384,6 @@
             return; // 演出中は通常の描画をスキップ
         }
 
-        // ログ画面の描画
-        if (state.showLog) {
-            // スクロール補正
-            if (state.logScrollY > 0) state.logScrollY = 0;
-            if (state.maxLogScroll !== undefined && state.logScrollY < state.maxLogScroll) {
-                state.logScrollY = state.maxLogScroll;
-            }
-
-            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-            ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-            ctx.fillStyle = "#fff";
-            ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
-            ctx.textAlign = "left";
-            ctx.textBaseline = "top";
-
-            let currentY = 50 + state.logScrollY;
-            const padX = 30;
-            const maxWidth = WIDTH - padX * 2;
-            const lineHeight = 36;
-
-            for (let i = 0; i < state.log.length; i++) {
-                const text = state.log[i];
-                const lines = text.split('\n');
-                for (let j = 0; j < lines.length; j++) {
-                    let line = "";
-                    const words = lines[j].split('');
-                    for (let k = 0; k < words.length; k++) {
-                        const testLine = line + words[k];
-                        const metrics = ctx.measureText(testLine);
-                        if (metrics.width > maxWidth && k > 0) {
-                            if (currentY > -lineHeight && currentY < HEIGHT) {
-                                ctx.fillText(line, padX, currentY);
-                            }
-                            line = words[k];
-                            currentY += lineHeight;
-                        } else {
-                            line = testLine;
-                        }
-                    }
-                    if (currentY > -lineHeight && currentY < HEIGHT) {
-                        ctx.fillText(line, padX, currentY);
-                    }
-                    currentY += lineHeight;
-                }
-                currentY += lineHeight / 2; // ログ間の余白
-            }
-
-            // スクロール限界の計算
-            const contentHeight = currentY - state.logScrollY - 50;
-            state.maxLogScroll = Math.min(0, HEIGHT - contentHeight - 100);
-
-            return; // ログ表示中はここで描画終了
-        }
-
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -1553,6 +1501,86 @@
                 });
             }
         }
+
+        // 4. ログ画面の描画（透過して上に重ねる）
+        if (state.showLog) {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+
+            const padX = 30;
+            const maxWidth = WIDTH - padX * 2;
+            const lineHeight = 36;
+
+            // コンテンツ全体の高さを事前計算
+            let contentHeight = 0;
+            for (let i = 0; i < state.log.length; i++) {
+                const text = state.log[i];
+                const lines = text.split('\n');
+                for (let j = 0; j < lines.length; j++) {
+                    let line = "";
+                    const words = lines[j].split('');
+                    for (let k = 0; k < words.length; k++) {
+                        const testLine = line + words[k];
+                        const metrics = ctx.measureText(testLine);
+                        if (metrics.width > maxWidth && k > 0) {
+                            line = words[k];
+                            contentHeight += lineHeight;
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    contentHeight += lineHeight;
+                }
+                contentHeight += lineHeight / 2; // ログ間の余白
+            }
+
+            // スクロール限界の計算
+            state.maxLogScroll = Math.min(0, HEIGHT - contentHeight - 100);
+
+            // ログを開いた瞬間の最新位置への補正
+            if (state.forceLogScrollBottom) {
+                state.logScrollY = state.maxLogScroll;
+                state.forceLogScrollBottom = false;
+            }
+
+            // スクロールのクランプ
+            if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
+            if (state.logScrollY > 0) state.logScrollY = 0;
+
+            // 実際のログテキストの描画
+            let currentY = 50 + state.logScrollY;
+            for (let i = 0; i < state.log.length; i++) {
+                const text = state.log[i];
+                const lines = text.split('\n');
+                for (let j = 0; j < lines.length; j++) {
+                    let line = "";
+                    const words = lines[j].split('');
+                    for (let k = 0; k < words.length; k++) {
+                        const testLine = line + words[k];
+                        const metrics = ctx.measureText(testLine);
+                        if (metrics.width > maxWidth && k > 0) {
+                            if (currentY > -lineHeight && currentY < HEIGHT) {
+                                ctx.fillText(line, padX, currentY);
+                            }
+                            line = words[k];
+                            currentY += lineHeight;
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    if (currentY > -lineHeight && currentY < HEIGHT) {
+                        ctx.fillText(line, padX, currentY);
+                    }
+                    currentY += lineHeight;
+                }
+                currentY += lineHeight / 2;
+            }
+        }
     }
 
     function update() {
@@ -1563,8 +1591,17 @@
         // タイトルフェード演出中のロジック
         if (titleState.active) {
             titleState.timer += dt;
+            
+            // ジングル曲の状態を監視
+            let jingleEnded = false;
+            if (titleState.jingle && bgmAudios[titleState.jingle]) {
+                const jingleAudio = bgmAudios[titleState.jingle];
+                if (jingleAudio.ended) {
+                    jingleEnded = true;
+                }
+            }
 
-            if (titleState.phase === 0) { // Fade In & Wait
+            if (titleState.phase === 0) { // Fade In (1秒) & Wait
                 titleState.alpha += dt / 1000;
                 if (titleState.alpha >= 1) {
                     titleState.alpha = 1;
@@ -1679,7 +1716,6 @@
             clientY = e.touches[0].clientY;
         }
 
-        // object-fit: contain に対応した座標計算の修正
         const scaleX = rect.width / WIDTH;
         const scaleY = rect.height / HEIGHT;
         const scale = Math.min(scaleX, scaleY);
@@ -1700,7 +1736,6 @@
         // TAP TO START画面での初回タップ処理
         if (state.sceneId === "tap_to_start") {
             if (!hasInteracted) hasInteracted = true;
-            // AudioContextの有効化のみ行い、BGMの自動再生は防ぐ
             if (!audioCtx) audioCtx = new AudioContext();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
@@ -1845,7 +1880,7 @@
             state.logBtnActive = false;
             playSound('select');
             state.showLog = true;
-            state.logScrollY = -99999; // 開いた時は一番最新のログを表示するよう補正
+            state.forceLogScrollBottom = true; // 開いた瞬間に最新を表示する
             return;
         }
 
@@ -1874,7 +1909,10 @@
             else if (btn.action === "toggle_bgm") {
                 state.bgmEnabled = !state.bgmEnabled;
                 if (state.bgmEnabled) {
-                    if (currentBgmKey !== "stop" && customBgmAudio) customBgmAudio.play().catch(e=>{});
+                    if (currentBgmKey !== "stop" && customBgmAudio) {
+                        customBgmAudio.currentTime = 0; // オンにした時も最初から
+                        customBgmAudio.play().catch(e=>{});
+                    }
                 } else {
                     if (customBgmAudio) customBgmAudio.pause();
                 }

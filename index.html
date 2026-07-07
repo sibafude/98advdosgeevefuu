@@ -109,6 +109,7 @@
         "bg_warehouse": "https://placehold.co/720x1280/2c3e50/FFF?text=Background:\\nWarehouse+Office",
         "bg_warehouse_night": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nWarehouse+(Night)",
         "bg_bar": "https://placehold.co/720x1280/1a1010/FFF?text=Background:\\nNight+Bar", 
+        "bg_shiori_house": "https://placehold.co/720x1280/4a3b32/FFF?text=Background:\\nShiori's+House", 
         "ev_kidnap": "https://placehold.co/720x1280/0d1117/FFF?text=Event+CG:\\nKidnapping+(720x1280)",
         "ev_rescue": "https://placehold.co/720x1280/2d0815/FFF?text=Event+CG:\\nRescue+Homura+and+Shiori",
         "ev_medal": "https://placehold.co/720x1280/111/FFF?text=Event+CG:\\nMedal+Photo", 
@@ -117,7 +118,8 @@
         "ch_kenta": "https://placehold.co/400x800/585/FFF?text=Character:\\nKenta+Morishita",
         "ch_principal": "https://placehold.co/400x800/444/FFF?text=Character:\\nPrincipal+(Elder+Woman)", 
         "ch_shiori": "https://placehold.co/400x800/4a8/FFF?text=Character:\\nShiori",
-        "ch_informant": "https://placehold.co/400x800/345/FFF?text=Character:\\nInformant", 
+        "ch_informant": "https://placehold.co/400x800/345/FFF?text=Character:\\nInformant",
+        "ch_father": "https://placehold.co/400x800/333/FFF?text=Character:\\nFather+(Diplomat)", 
         "ui_panel": "https://placehold.co/720x280/000028/FFF?text=UI+Panel"
     };
 
@@ -200,7 +202,10 @@
                 
                 if (currentBgmKey === id || (currentBgmKey === 'bgm' && id === 'bgm')) {
                     customBgmAudio = newAudio;
-                    if (state.bgmEnabled && hasInteracted) customBgmAudio.play().catch(err => console.log("再生待機"));
+                    if (state.bgmEnabled && hasInteracted) {
+                        customBgmAudio.currentTime = 0;
+                        customBgmAudio.play().catch(err => console.log("再生待機"));
+                    }
                 }
             };
             reader.readAsDataURL(file);
@@ -338,7 +343,7 @@
         showLog: false, 
         logScrollY: 0, 
         maxLogScroll: 0,
-        forceLogScrollBottom: false // ログ開閉時のスクロール補正フラグ
+        forceLogScrollBottom: false 
     };
 
     let stateBackup = null; 
@@ -359,7 +364,12 @@
         },
         "act1_end_title": {
             onLoad: () => {
-                showTitle("ACT 1", "END", "tap_to_start", "jingle");
+                showTitle("ACT 1", "END", "act2_title", "jingle");
+            }
+        },
+        "act2_title": {
+            onLoad: () => {
+                showTitle("ACT 2", "依頼", "act2_start", "jingle");
             }
         },
         "start": {
@@ -638,7 +648,7 @@
         "confrontation": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
-            bgm: "bgm_tension", 
+            bgm: "bgm_tension", // 犯人との対峙
             text: [
                 "冴島「そこまでだ、橘先生。」",
                 "橘「っ！？ ……だ、誰ですか、人の見学を邪魔する不審者は！」",
@@ -760,7 +770,7 @@
             text: [
                 "栞「は、はじめまして……。水無月 栞（みなづき しおり）と申します。」",
                 "冴島（眼鏡をかけた、大人しそうな子だな。ほむら嬢とは正反対のタイプに見えるが……）",
-                "ほむら「栞は成績学年トップの才女なんです。でも最近、様子がおかしくて……私が無理やり連れてきました。」",
+                "ほむら「栞は真面目で成績優秀な才女なんです。でも最近、様子がおかしくて……私が無理やり連れてきました。」",
                 "冴島「なるほど。で、命が狙われているってのはどういうことだ？」",
                 "栞「……私の父は、外務省で働く外交官です。父の仕事の詳しい内容は私にはわからないのですが、最近すごくピリピリしていて……」",
                 "栞「数日前から、登下校の際に黒い車や、見知らぬ男たちに後をつけられている気がするんです。」",
@@ -960,7 +970,8 @@
                 "そこには、写真と全く同じ紋章のメダルが揺れていた。",
                 "栞「これ、私が子供の頃に亡くなった母の形見なんです。最近になって急に、父から『絶対に肌身離さず持っていなさい』と渡されて……」",
                 "栞「母の母国のもので、母もずっと受け継いできた大事なメダルだそうです。」",
-                "冴島（母親の母国……。それが今回の件と何か繋がりがあるのか……？）",
+                "栞「母の故郷は『ワカナディア』という、国土のほとんどが砂漠の小さな国です。」",
+                "冴島（ワカナディア……。そういえば、橘先生もどこか日本育ちではないような雰囲気があったな。まさか……？）",
                 "栞「父はその国の外交官なんです。服の中に入れていたので、誰にも見せていません……。ほむらちゃんにも。」",
                 "冴島「なるほど。連中の狙いは誘拐そのものじゃなく、このメダルか。……あるいは両方か。」",
                 "冴島「栞嬢、そのメダルは君にとって大事なものだ、しっかり持っていてくれ。俺はこの写真のコピーをもらって、知り合いに心当たりを探らせてみる。」",
@@ -1080,7 +1091,8 @@
             text: [
                 "冴島「そうだ、外務省の外交官だ。」",
                 "冴島「古書の盗難事件と、外交官の娘を狙った誘拐事件……。」",
-                "冴島「一見無関係に見える２つの事件だが、この学園という舞台で奇妙に交錯している。」",
+                "冴島「そして、砂漠の小国ワカナディアと、『ワカナピピー』……。」",
+                "冴島「一見無関係に見える事件だが、この学園という舞台で奇妙に交錯している。」",
                 "冴島「明日、情報屋からの連絡を待って、さらに深く探りを入れるとしよう……。」",
                 "冴島「ふわぁ……。それにしても、今日は色々ありすぎて頭がショートしそうだ。」",
                 "冴島「限界だな……。今日はもう寝るとするか。」"
@@ -1092,6 +1104,101 @@
             text: [],
             commands: [
                 { label: "To Be Continued...", target: "act1_end_title" }
+            ]
+        },
+        "act2_start": {
+            bgId: "bg_classroom", 
+            bgm: "bgm",
+            charId: "ch_shiori",
+            text: [
+                "翌日の放課後。教室で帰り支度をしていると、栞嬢が控えめに声をかけてきた。",
+                "栞「冴島先生……昨日は、ほむらちゃんと一緒に私の護衛を引き受けてくださって、本当にありがとうございました。」",
+                "冴島「気にするな。実習生の暇つぶしみたいなもんさ。」",
+                "栞「あの……昨日の夜、父に護衛の件を話してみたんです。そうしたら、一度先生に直接お会いして話をしたいと言っていて……」",
+                "栞「もしよろしければ、今日の帰り、一緒に私の家に来ていただけませんか？」",
+                "冴島「親父さんに直接か。いいだろう、正式に依頼を受けるなら、依頼主の身内にも挨拶しておく必要があるからな。」"
+            ],
+            nextScene: "goto_shiori_house"
+        },
+        "goto_shiori_house": {
+            bgId: "bg_shiori_house",
+            bgm: "bgm",
+            charId: "ch_father",
+            text: [
+                "冴島（ここが水無月邸か。外交官の家だけあって、かなり立派な洋館だな。）",
+                "応接室に通されると、そこには険しい顔つきをした初老の男が座っていた。",
+                "水無月「君が冴島くんか。娘を助けてくれたそうだな、礼を言う。私が栞の父だ。」",
+                "冴島「歴史の実習生をやっている冴島です。それで、俺を呼んだ用件というのは？」"
+            ],
+            onLoad: () => {
+                state.flags.askedReason = false;
+                state.flags.askedJob = false;
+                state.flags.askedMother = false;
+            },
+            nextScene: "father_talk_commands"
+        },
+        "father_talk_commands": {
+            bgId: "bg_shiori_house",
+            charId: "ch_father",
+            text: [],
+            commands: [
+                { label: "狙われた理由", target: "father_ask_reason", condition: () => !state.flags.askedReason },
+                { label: "父親の仕事", target: "father_ask_job", condition: () => !state.flags.askedJob },
+                { label: "母親とメダル", target: "father_ask_mother", condition: () => !state.flags.askedMother },
+                { label: "話を終える", target: "father_agreement", condition: () => state.flags.askedReason && state.flags.askedJob && state.flags.askedMother }
+            ]
+        },
+        "father_ask_reason": {
+            bgId: "bg_shiori_house",
+            charId: "ch_father",
+            text: [
+                "冴島「単刀直入に聞きます。なぜ栞嬢は狙われているんです？ 心当たりは？」",
+                "水無月「……さあな。ただの身代金目当ての誘拐犯ではないかと思っているが。」",
+                "冴島（目を逸らしたな。明らかに何かを隠しているぜ。）"
+            ],
+            onLoad: () => { state.flags.askedReason = true; },
+            nextScene: "father_talk_commands"
+        },
+        "father_ask_job": {
+            bgId: "bg_shiori_house",
+            charId: "ch_father",
+            text: [
+                "冴島「あんたの仕事……条約の交渉が関係しているんじゃないのか？」",
+                "水無月「私の仕事は国家間の機密事項だ。一介の実習生……いや、探偵気取りに話すことなど何もない。」",
+                "水無月「君にはただ、学校内での娘の安全を守ってもらえればそれでいいんだ。」"
+            ],
+            onLoad: () => { state.flags.askedJob = true; },
+            nextScene: "father_talk_commands"
+        },
+        "father_ask_mother": {
+            bgId: "bg_shiori_house",
+            charId: "ch_father",
+            text: [
+                "冴島「栞嬢が持っていたメダル……亡くなった奥さんの母国のものだそうだな。砂漠の国『ワカナディア』の。」",
+                "水無月「……っ！？ なぜそれを……。栞が話したのか。」",
+                "冴島「ワカナディアには、『ワカナピピー』って花があるそうじゃないか。」",
+                "冴島「緑の花びらにオレンジの花弁のスミレに似た花らしいが、生息地や栽培方法は秘密だとか。あんたの仕事やメダルと関係が？」",
+                "水無月「……妻の祖国は現在、内乱と軍事政権の台頭で情勢が非常に不安定でね。だが、今回の件とは無関係だ。これ以上詮索しないでくれ。」",
+                "冴島（動揺していた。確実にあのメダルとワカナディアが、事件の鍵だな。）"
+            ],
+            onLoad: () => { state.flags.askedMother = true; },
+            nextScene: "father_talk_commands"
+        },
+        "father_agreement": {
+            bgId: "bg_shiori_house",
+            charId: "ch_father",
+            text: [
+                "冴島「……わかった。あんたが何を隠していようと、俺は依頼通り栞嬢を守るだけだ。」",
+                "水無月「頼んだぞ。報酬は十分に支払おう。」",
+                "冴島（肝心なことは何も言わなかったが、収穫はあった。中東の小国、軍事政権、そしてメダル……深い裏がありそうだぜ。）"
+            ],
+            nextScene: "act2_end_commands"
+        },
+        "act2_end_commands": {
+            bgId: "bg_shiori_house",
+            text: [],
+            commands: [
+                { label: "To Be Continued...", target: "act2_end_title" }
             ]
         },
         // --- ゲームオーバー処理 ---
@@ -1504,6 +1611,10 @@
 
         // 4. ログ画面の描画（透過して上に重ねる）
         if (state.showLog) {
+            // スクロールのクランプ
+            if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
+            if (state.logScrollY > 0) state.logScrollY = 0;
+
             ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -1515,42 +1626,6 @@
             const padX = 30;
             const maxWidth = WIDTH - padX * 2;
             const lineHeight = 36;
-
-            // コンテンツ全体の高さを事前計算
-            let contentHeight = 0;
-            for (let i = 0; i < state.log.length; i++) {
-                const text = state.log[i];
-                const lines = text.split('\n');
-                for (let j = 0; j < lines.length; j++) {
-                    let line = "";
-                    const words = lines[j].split('');
-                    for (let k = 0; k < words.length; k++) {
-                        const testLine = line + words[k];
-                        const metrics = ctx.measureText(testLine);
-                        if (metrics.width > maxWidth && k > 0) {
-                            line = words[k];
-                            contentHeight += lineHeight;
-                        } else {
-                            line = testLine;
-                        }
-                    }
-                    contentHeight += lineHeight;
-                }
-                contentHeight += lineHeight / 2; // ログ間の余白
-            }
-
-            // スクロール限界の計算
-            state.maxLogScroll = Math.min(0, HEIGHT - contentHeight - 100);
-
-            // ログを開いた瞬間の最新位置への補正
-            if (state.forceLogScrollBottom) {
-                state.logScrollY = state.maxLogScroll;
-                state.forceLogScrollBottom = false;
-            }
-
-            // スクロールのクランプ
-            if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
-            if (state.logScrollY > 0) state.logScrollY = 0;
 
             // 実際のログテキストの描画
             let currentY = 50 + state.logScrollY;
@@ -1736,6 +1811,7 @@
         // TAP TO START画面での初回タップ処理
         if (state.sceneId === "tap_to_start") {
             if (!hasInteracted) hasInteracted = true;
+            // AudioContextの有効化のみ行い、BGMの自動再生は防ぐ
             if (!audioCtx) audioCtx = new AudioContext();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
@@ -1766,68 +1842,28 @@
             isDraggingLog = true;
             logStartY = pos.y;
             logLastY = pos.y;
-            logStartScrollY = state.logScrollY;
             logVelocityY = 0;
             logDragDist = 0;
             return;
         }
 
-        if (!state.uiVisible) {
-            state.uiVisible = true;
-            return;
-        }
-
-        const sysBtn = LAYOUT.sysBtn;
-        if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
-            state.sysBtnActive = true;
-            return;
-        }
-
-        const logBtn = LAYOUT.logBtn;
-        if (pos.x >= logBtn.x && pos.x <= logBtn.x + logBtn.w && pos.y >= logBtn.y && pos.y <= logBtn.y + logBtn.h) {
-            state.logBtnActive = true;
-            return;
-        }
-
-        if (state.showCommands) {
-            state.activeButtonIndex = -1;
-            for (let i = 0; i < state.buttons.length; i++) {
-                const btn = state.buttons[i];
-                if (pos.x >= btn.x && pos.x <= btn.x + btn.w && pos.y >= btn.y && pos.y <= btn.y + btn.h) {
-                    state.activeButtonIndex = i;
-                    return; 
+        // 見た目のボタンアクティブ状態処理のみ
+        if (state.uiVisible) {
+            const sysBtn = LAYOUT.sysBtn;
+            if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
+                state.sysBtnActive = true;
+            }
+            const logBtn = LAYOUT.logBtn;
+            if (pos.x >= logBtn.x && pos.x <= logBtn.x + logBtn.w && pos.y >= logBtn.y && pos.y <= logBtn.y + logBtn.h) {
+                state.logBtnActive = true;
+            }
+            if (state.showCommands) {
+                for (let i = 0; i < state.buttons.length; i++) {
+                    const btn = state.buttons[i];
+                    if (pos.x >= btn.x && pos.x <= btn.x + btn.w && pos.y >= btn.y && pos.y <= btn.y + btn.h) {
+                        state.activeButtonIndex = i;
+                    }
                 }
-            }
-            
-            if (pos.y < LAYOUT.window.y) {
-                state.uiVisible = false;
-            }
-        } else {
-            if (state.isTyping) {
-                state.displayedText = state.fullText;
-                state.textIndex = state.fullText.length;
-                state.isTyping = false;
-            } 
-            else if (state.currentPage < state.textPages.length - 1) {
-                state.currentPage++;
-                state.fullText = state.textPages[state.currentPage];
-                // --- ログ追加 ---
-                if (state.log.length === 0 || state.log[state.log.length - 1] !== state.fullText) {
-                    state.log.push(state.fullText);
-                }
-                // -------------
-                state.displayedText = "";
-                state.textIndex = 0;
-                state.isTyping = true;
-                playSound('select');
-            }
-            else if (state.buttons.length > 0) {
-                state.showCommands = true;
-                playSound('select');
-            }
-            else if (scenario[state.sceneId].nextScene) {
-                loadScene(scenario[state.sceneId].nextScene);
-                playSound('select');
             }
         }
     });
@@ -1845,6 +1881,7 @@
 
     canvas.addEventListener('pointerup', (e) => {
         if (titleState.active) return;
+        const pos = getPointerPos(e);
 
         if (state.showLog) {
             isDraggingLog = false;
@@ -1855,12 +1892,19 @@
             return;
         }
 
-        if (!state.uiVisible) return;
+        if (!state.uiVisible) {
+            state.uiVisible = true;
+            return;
+        }
 
-        if (state.sysBtnActive) {
-            state.sysBtnActive = false;
+        // 座標から直接ボタンを判定する（スマホでのズレ・不発防止）
+        state.sysBtnActive = false;
+        state.logBtnActive = false;
+        state.activeButtonIndex = -1;
+
+        const sysBtn = LAYOUT.sysBtn;
+        if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
             playSound('select');
-            
             if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
                 if (state.pendingLoadSceneId) {
                     let id = state.pendingLoadSceneId;
@@ -1876,69 +1920,94 @@
             return;
         }
 
-        if (state.logBtnActive) {
-            state.logBtnActive = false;
+        const logBtn = LAYOUT.logBtn;
+        if (pos.x >= logBtn.x && pos.x <= logBtn.x + logBtn.w && pos.y >= logBtn.y && pos.y <= logBtn.y + logBtn.h) {
             playSound('select');
+            state.maxLogScroll = calculateMaxLogScroll();
+            state.logScrollY = state.maxLogScroll; // 即座に最新へ
             state.showLog = true;
-            state.forceLogScrollBottom = true; // 開いた瞬間に最新を表示する
             return;
         }
 
-        if (state.showCommands && state.activeButtonIndex !== -1) {
-            const btn = state.buttons[state.activeButtonIndex];
-            
-            if(btn.label === "戻る") playSound('cancel');
-            else playSound('select');
+        if (state.showCommands) {
+            for (let i = 0; i < state.buttons.length; i++) {
+                const btn = state.buttons[i];
+                if (pos.x >= btn.x && pos.x <= btn.x + btn.w && pos.y >= btn.y && pos.y <= btn.y + btn.h) {
+                    if(btn.label === "戻る") playSound('cancel');
+                    else playSound('select');
 
-            if (btn.target) {
-                loadScene(btn.target);
-            } 
-            else if (btn.action === "toggle_dev") {
-                const devTools = document.getElementById('dev-tools');
-                if (devTools.style.display === "none" || devTools.style.display === "") {
-                    devTools.style.display = "block";
-                } else {
-                    devTools.style.display = "none";
-                }
-                closeSystemMenu(); 
-            }
-            else if (btn.action === "hide_ui") {
-                state.uiVisible = false;
-                closeSystemMenu(); 
-            }
-            else if (btn.action === "toggle_bgm") {
-                state.bgmEnabled = !state.bgmEnabled;
-                if (state.bgmEnabled) {
-                    if (currentBgmKey !== "stop" && customBgmAudio) {
-                        customBgmAudio.currentTime = 0; // オンにした時も最初から
-                        customBgmAudio.play().catch(e=>{});
+                    if (btn.target) {
+                        loadScene(btn.target);
+                    } 
+                    else if (btn.action === "toggle_dev") {
+                        const devTools = document.getElementById('dev-tools');
+                        devTools.style.display = (devTools.style.display === "none" || devTools.style.display === "") ? "block" : "none";
+                        closeSystemMenu(); 
                     }
-                } else {
-                    if (customBgmAudio) customBgmAudio.pause();
+                    else if (btn.action === "hide_ui") {
+                        state.uiVisible = false;
+                        closeSystemMenu(); 
+                    }
+                    else if (btn.action === "toggle_bgm") {
+                        state.bgmEnabled = !state.bgmEnabled;
+                        if (state.bgmEnabled) {
+                            if (currentBgmKey !== "stop" && customBgmAudio) {
+                                customBgmAudio.currentTime = 0; // オンにした時も最初から
+                                customBgmAudio.play().catch(e=>{});
+                            }
+                        } else {
+                            if (customBgmAudio) customBgmAudio.pause();
+                        }
+                        calculateButtons(scenario[state.sceneId].commands);
+                    }
+                    else if (btn.action === "close_system") {
+                        if (state.pendingLoadSceneId) {
+                            let id = state.pendingLoadSceneId;
+                            state.pendingLoadSceneId = null;
+                            stateBackup = null;
+                            loadScene(id);
+                        } else {
+                            closeSystemMenu(); 
+                        }
+                    }
+                    else if (btn.action === "direct_load") {
+                        const saved = localStorage.getItem("seiran_save_data");
+                        if (saved && scenario[saved]) loadScene(saved);
+                        else loadScene("start"); 
+                    }
+                    return;
                 }
-                // ボタンのラベル表示を更新するために再計算
-                calculateButtons(scenario[state.sceneId].commands);
             }
-            else if (btn.action === "close_system") {
-                if (state.pendingLoadSceneId) {
-                    let id = state.pendingLoadSceneId;
-                    state.pendingLoadSceneId = null;
-                    stateBackup = null;
-                    loadScene(id);
-                } else {
-                    closeSystemMenu(); 
+            // コマンド以外の領域タップでUI非表示
+            if (pos.y < LAYOUT.window.y) {
+                state.uiVisible = false;
+            }
+        } else {
+            // テキスト送り
+            if (state.isTyping) {
+                state.displayedText = state.fullText;
+                state.textIndex = state.fullText.length;
+                state.isTyping = false;
+            } 
+            else if (state.currentPage < state.textPages.length - 1) {
+                state.currentPage++;
+                state.fullText = state.textPages[state.currentPage];
+                if (state.log.length === 0 || state.log[state.log.length - 1] !== state.fullText) {
+                    state.log.push(state.fullText);
                 }
+                state.displayedText = "";
+                state.textIndex = 0;
+                state.isTyping = true;
+                playSound('select');
             }
-            else if (btn.action === "direct_load") {
-                const saved = localStorage.getItem("seiran_save_data");
-                if (saved && scenario[saved]) {
-                    loadScene(saved);
-                } else {
-                    loadScene("start"); 
-                }
+            else if (state.buttons.length > 0) {
+                state.showCommands = true;
+                playSound('select');
             }
-            
-            state.activeButtonIndex = -1;
+            else if (scenario[state.sceneId].nextScene) {
+                loadScene(scenario[state.sceneId].nextScene);
+                playSound('select');
+            }
         }
     });
 

@@ -144,7 +144,7 @@
     let defaultBgmInterval = null;
     let currentNote = 0;
 
-    // 複数BGM対応
+    // 複数BGM対応 (mp3がない場合はm4aを試す)
     const bgmKeys = ["bgm", "bgm_tension", "bgm_night", "jingle"];
     const bgmAudios = {};
 
@@ -456,7 +456,7 @@
         },
         "clocktower_enter": {
             bgId: "bg_clocktower",
-            bgm: "stop", 
+            bgm: "stop", // 時計塔の入り口は不気味な静けさ
             text: [
                 "冴島「ここが時計塔の入り口か。立派なアンティーク調の扉だが、しっかりと鍵がかかっているな。」",
                 "冴島「ん……？ 誰か近づいてくるな。」"
@@ -474,7 +474,7 @@
         "clocktower_hide": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
-            bgm: "bgm_tension", 
+            bgm: "bgm_tension", // 遭遇時に緊迫感
             text: [
                 "？？？「……ふぅ。これで仕込みは完璧ね。」",
                 "冴島（あの女性は……今朝挨拶した、新任教師の橘結衣だな。時計塔の中から出てきたのか？）",
@@ -528,7 +528,7 @@
         },
         "clocktower_post_yui": {
             bgId: "bg_clocktower",
-            bgm: "bgm", 
+            bgm: "bgm", // 立ち去った後は通常のBGMに戻す
             text: [
                 "冴島「橘先生が立ち去ったな。さて、もう少し周囲を調べてみるか。」"
             ],
@@ -599,7 +599,7 @@
         },
         "deduction": {
             bgId: "bg_clocktower",
-            bgm: "bgm_tension", 
+            bgm: "bgm_tension", // 推理の盛り上がり
             text: [
                 "冴島「よし、新任教師の橘と用務員の森下、そして図書室の証拠……すべてが結びついた。」",
                 "冴島「犯人はひそかに作った合鍵を使い、夕暮れ時に作動する超音波発振器を仕掛けた。ハトが騒いだのはその超音波のせいだ。」",
@@ -619,7 +619,7 @@
         "ambush": {
             bgId: "bg_clocktower",
             charId: "ch_homura",
-            bgm: "stop", 
+            bgm: "stop", // 待ち伏せの緊張感のための無音
             text: [
                 "冴島「夕暮れまであと少しだ。ここで張っていれば、犯人が発振器の回収、あるいは次の仕掛けをしに現れるはずだ。」",
                 "ほむら「……やっぱり、ただの実習生じゃなかったんですね。」",
@@ -691,7 +691,7 @@
         "report_to_principal": {
             bgId: "bg_office",
             charId: "ch_principal",
-            bgm: "bgm", 
+            bgm: "bgm", // 対決後の落ち着いたBGM
             text: [
                 "俺は橘先生に同行を願い、学園長室へ向かった。",
                 "冴島「学園長。例の『時計塔の悪魔』の正体と、盗まれた古書をお持ちしました。」",
@@ -770,7 +770,7 @@
             text: [
                 "栞「は、はじめまして……。水無月 栞（みなづき しおり）と申します。」",
                 "冴島（眼鏡をかけた、大人しそうな子だな。ほむら嬢とは正反対のタイプに見えるが……）",
-                "ほむら「栞は真面目で成績優秀な才女なんです。でも最近、様子がおかしくて……私が無理やり連れてきました。」",
+                "ほむら「栞は真面目で成績優秀なんです。でも最近、様子がおかしくて……私が無理やり連れてきました。」",
                 "冴島「なるほど。で、命が狙われているってのはどういうことだ？」",
                 "栞「……私の父は、外務省で働く外交官です。父の仕事の詳しい内容は私にはわからないのですが、最近すごくピリピリしていて……」",
                 "栞「数日前から、登下校の際に黒い車や、見知らぬ男たちに後をつけられている気がするんです。」",
@@ -969,7 +969,6 @@
                 "栞は自分の胸元、制服のブラウスの下から、一本のペンダントを引っ張り出した。",
                 "そこには、写真と全く同じ紋章のメダルが揺れていた。",
                 "栞「これ、私が子供の頃に亡くなった母の形見なんです。最近になって急に、父から『絶対に肌身離さず持っていなさい』と渡されて……」",
-                "栞「母の母国のもので、母もずっと受け継いできた大事なメダルだそうです。」",
                 "栞「母の故郷は『ワカナディア』という、国土のほとんどが砂漠の小さな国です。」",
                 "冴島（ワカナディア……。そういえば、橘先生もどこか日本育ちではないような雰囲気があったな。まさか……？）",
                 "栞「父はその国の外交官なんです。服の中に入れていたので、誰にも見せていません……。ほむらちゃんにも。」",
@@ -1091,7 +1090,7 @@
             text: [
                 "冴島「そうだ、外務省の外交官だ。」",
                 "冴島「古書の盗難事件と、外交官の娘を狙った誘拐事件……。」",
-                "冴島「そして、砂漠の小国ワカナディアと、『ワカナピピー』……。」",
+                "冴島「そして、砂漠の小国ワカナディアと、秘密の花『ワカナピピー』……。」",
                 "冴島「一見無関係に見える事件だが、この学園という舞台で奇妙に交錯している。」",
                 "冴島「明日、情報屋からの連絡を待って、さらに深く探りを入れるとしよう……。」",
                 "冴島「ふわぁ……。それにしても、今日は色々ありすぎて頭がショートしそうだ。」",
@@ -1361,6 +1360,7 @@
         const validCommands = commands.filter(cmd => !cmd.condition || cmd.condition());
         if(validCommands.length === 0) return;
         
+        // 複数列レイアウトに戻す
         const cols = validCommands.length > 4 ? 3 : (validCommands.length > 1 ? 2 : 1);
         const rows = Math.ceil(validCommands.length / cols); 
         
@@ -1611,10 +1611,6 @@
 
         // 4. ログ画面の描画（透過して上に重ねる）
         if (state.showLog) {
-            // スクロールのクランプ
-            if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
-            if (state.logScrollY > 0) state.logScrollY = 0;
-
             ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -1627,10 +1623,48 @@
             const maxWidth = WIDTH - padX * 2;
             const lineHeight = 36;
 
+            // コンテンツ全体の高さを事前計算
+            let contentHeight = 0;
+            for (let i = 0; i < state.log.length; i++) {
+                const text = state.log[i];
+                if (!text) continue;
+                const lines = text.split('\n');
+                for (let j = 0; j < lines.length; j++) {
+                    let line = "";
+                    const words = lines[j].split('');
+                    for (let k = 0; k < words.length; k++) {
+                        const testLine = line + words[k];
+                        const metrics = ctx.measureText(testLine);
+                        if (metrics.width > maxWidth && k > 0) {
+                            line = words[k];
+                            contentHeight += lineHeight;
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    contentHeight += lineHeight;
+                }
+                contentHeight += lineHeight / 2; // ログ間の余白
+            }
+
+            // スクロール限界の計算
+            state.maxLogScroll = Math.min(0, HEIGHT - contentHeight - 100);
+
+            // ログを開いた瞬間に最新のログ（一番下）に合わせる
+            if (state.forceLogScrollBottom) {
+                state.logScrollY = state.maxLogScroll;
+                state.forceLogScrollBottom = false;
+            }
+
+            // スクロールのクランプ
+            if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
+            if (state.logScrollY > 0) state.logScrollY = 0;
+
             // 実際のログテキストの描画
             let currentY = 50 + state.logScrollY;
             for (let i = 0; i < state.log.length; i++) {
                 const text = state.log[i];
+                if (!text) continue;
                 const lines = text.split('\n');
                 for (let j = 0; j < lines.length; j++) {
                     let line = "";
@@ -1923,9 +1957,8 @@
         const logBtn = LAYOUT.logBtn;
         if (pos.x >= logBtn.x && pos.x <= logBtn.x + logBtn.w && pos.y >= logBtn.y && pos.y <= logBtn.y + logBtn.h) {
             playSound('select');
-            state.maxLogScroll = calculateMaxLogScroll();
-            state.logScrollY = state.maxLogScroll; // 即座に最新へ
             state.showLog = true;
+            state.forceLogScrollBottom = true; // 開いた瞬間に最新を表示する
             return;
         }
 
@@ -1992,9 +2025,11 @@
             else if (state.currentPage < state.textPages.length - 1) {
                 state.currentPage++;
                 state.fullText = state.textPages[state.currentPage];
+                // --- ログ追加 ---
                 if (state.log.length === 0 || state.log[state.log.length - 1] !== state.fullText) {
                     state.log.push(state.fullText);
                 }
+                // -------------
                 state.displayedText = "";
                 state.textIndex = 0;
                 state.isTyping = true;

@@ -84,6 +84,8 @@
     /* =========================================
        ゲームシステム初期設定
        ========================================= */
+    const GAME_VERSION = "Ver 1.0.1"; // ゲームバージョン
+
     const canvas = document.getElementById("game-canvas");
     const ctx = canvas.getContext("2d");
 
@@ -456,7 +458,7 @@
         },
         "clocktower_enter": {
             bgId: "bg_clocktower",
-            bgm: "stop", // 時計塔の入り口は不気味な静けさ
+            bgm: "stop", 
             text: [
                 "冴島「ここが時計塔の入り口か。立派なアンティーク調の扉だが、しっかりと鍵がかかっているな。」",
                 "冴島「ん……？ 誰か近づいてくるな。」"
@@ -474,7 +476,7 @@
         "clocktower_hide": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
-            bgm: "bgm_tension", // 遭遇時に緊迫感
+            bgm: "bgm_tension", 
             text: [
                 "？？？「……ふぅ。これで仕込みは完璧ね。」",
                 "冴島（あの女性は……今朝挨拶した、新任教師の橘結衣だな。時計塔の中から出てきたのか？）",
@@ -528,7 +530,7 @@
         },
         "clocktower_post_yui": {
             bgId: "bg_clocktower",
-            bgm: "bgm", // 立ち去った後は通常のBGMに戻す
+            bgm: "bgm", 
             text: [
                 "冴島「橘先生が立ち去ったな。さて、もう少し周囲を調べてみるか。」"
             ],
@@ -599,7 +601,7 @@
         },
         "deduction": {
             bgId: "bg_clocktower",
-            bgm: "bgm_tension", // 推理の盛り上がり
+            bgm: "bgm_tension", 
             text: [
                 "冴島「よし、新任教師の橘と用務員の森下、そして図書室の証拠……すべてが結びついた。」",
                 "冴島「犯人はひそかに作った合鍵を使い、夕暮れ時に作動する超音波発振器を仕掛けた。ハトが騒いだのはその超音波のせいだ。」",
@@ -619,7 +621,7 @@
         "ambush": {
             bgId: "bg_clocktower",
             charId: "ch_homura",
-            bgm: "stop", // 待ち伏せの緊張感のための無音
+            bgm: "stop", 
             text: [
                 "冴島「夕暮れまであと少しだ。ここで張っていれば、犯人が発振器の回収、あるいは次の仕掛けをしに現れるはずだ。」",
                 "ほむら「……やっぱり、ただの実習生じゃなかったんですね。」",
@@ -648,7 +650,7 @@
         "confrontation": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
-            bgm: "bgm_tension", // 犯人との対峙
+            bgm: "bgm_tension", 
             text: [
                 "冴島「そこまでだ、橘先生。」",
                 "橘「っ！？ ……だ、誰ですか、人の見学を邪魔する不審者は！」",
@@ -691,7 +693,7 @@
         "report_to_principal": {
             bgId: "bg_office",
             charId: "ch_principal",
-            bgm: "bgm", // 対決後の落ち着いたBGM
+            bgm: "bgm", 
             text: [
                 "俺は橘先生に同行を願い、学園長室へ向かった。",
                 "冴島「学園長。例の『時計塔の悪魔』の正体と、盗まれた古書をお持ちしました。」",
@@ -1229,7 +1231,7 @@
 
         // システムメニュー
         "system_menu": {
-            text: ["Ver 1.0.0"], 
+            text: [], 
             commands: [
                 { label: "セーブ", target: "sys_save" },
                 { label: "ロード", target: "sys_load" },
@@ -1314,7 +1316,7 @@
         const expectedSceneId = sceneId;
         if (scene.onLoad) scene.onLoad();
         
-        // onLoad 内で別シーンに遷移した場合はその後の初期化処理を中断する（バグ修正）
+        // onLoad 内で別シーンに遷移した場合はその後の初期化処理を中断する
         if (state.sceneId !== expectedSceneId) return; 
 
         state.textPages = scene.text || [];
@@ -1388,7 +1390,6 @@
         const validCommands = commands.filter(cmd => !cmd.condition || cmd.condition());
         if(validCommands.length === 0) return;
         
-        // 複数列レイアウトに戻す
         const cols = validCommands.length > 4 ? 3 : (validCommands.length > 1 ? 2 : 1);
         const rows = Math.ceil(validCommands.length / cols); 
         
@@ -1408,7 +1409,6 @@
         validCommands.forEach((cmd, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
-            // labelが関数の場合は評価した文字列を使用する（動的ラベル対応）
             const btnLabel = typeof cmd.label === 'function' ? cmd.label() : cmd.label;
             
             state.buttons.push({
@@ -1516,62 +1516,7 @@
             ctx.font = "bold 60px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
             ctx.fillText(titleState.text2, WIDTH / 2, HEIGHT / 2 + 50);
             ctx.textBaseline = "alphabetic";
-            return; // 演出中は通常の描画をスキップ
-        }
-
-        // ログ画面の描画
-        if (state.showLog) {
-            // スクロール補正
-            if (state.logScrollY > 0) state.logScrollY = 0;
-            if (state.maxLogScroll !== undefined && state.logScrollY < state.maxLogScroll) {
-                state.logScrollY = state.maxLogScroll;
-            }
-
-            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-            ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-            ctx.fillStyle = "#fff";
-            ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
-            ctx.textAlign = "left";
-            ctx.textBaseline = "top";
-
-            let currentY = 50 + state.logScrollY;
-            const padX = 30;
-            const maxWidth = WIDTH - padX * 2;
-            const lineHeight = 36;
-
-            for (let i = 0; i < state.log.length; i++) {
-                const text = state.log[i];
-                const lines = text.split('\n');
-                for (let j = 0; j < lines.length; j++) {
-                    let line = "";
-                    const words = lines[j].split('');
-                    for (let k = 0; k < words.length; k++) {
-                        const testLine = line + words[k];
-                        const metrics = ctx.measureText(testLine);
-                        if (metrics.width > maxWidth && k > 0) {
-                            if (currentY > -lineHeight && currentY < HEIGHT) {
-                                ctx.fillText(line, padX, currentY);
-                            }
-                            line = words[k];
-                            currentY += lineHeight;
-                        } else {
-                            line = testLine;
-                        }
-                    }
-                    if (currentY > -lineHeight && currentY < HEIGHT) {
-                        ctx.fillText(line, padX, currentY);
-                    }
-                    currentY += lineHeight;
-                }
-                currentY += lineHeight / 2; // ログ間の余白
-            }
-
-            // スクロール限界の計算
-            const contentHeight = currentY - state.logScrollY - 50;
-            state.maxLogScroll = Math.min(0, HEIGHT - contentHeight - 100);
-
-            return; // ログ表示中はここで描画終了
+            return; 
         }
 
         ctx.fillStyle = "#000";
@@ -1692,9 +1637,20 @@
             }
         }
 
+        // バージョン情報の表示（システム関連画面を開いている時）
+        if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fillRect(WIDTH - 120, 10, 110, 30);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 16px sans-serif";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+            ctx.fillText(GAME_VERSION, WIDTH - 20, 25);
+            ctx.textBaseline = "alphabetic"; 
+        }
+
         // 4. ログ画面の描画（透過して上に重ねる）
         if (state.showLog) {
-            // スクロールのクランプ
             if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
             if (state.logScrollY > 0) state.logScrollY = 0;
 
@@ -1710,7 +1666,6 @@
             const maxWidth = WIDTH - padX * 2;
             const lineHeight = 36;
 
-            // 実際のログテキストの描画
             let currentY = 50 + state.logScrollY;
             for (let i = 0; i < state.log.length; i++) {
                 const text = state.log[i];
@@ -1751,7 +1706,6 @@
         if (titleState.active) {
             titleState.timer += dt;
             
-            // ジングル曲の状態を監視
             let jingleEnded = false;
             if (titleState.jingle && bgmAudios[titleState.jingle]) {
                 const jingleAudio = bgmAudios[titleState.jingle];
@@ -1760,28 +1714,26 @@
                 }
             }
 
-            if (titleState.phase === 0) { // Fade In (1秒) & Wait
+            if (titleState.phase === 0) { // Fade In & Wait
                 titleState.alpha += dt / 1000;
                 if (titleState.alpha >= 1) {
                     titleState.alpha = 1;
                     titleState.phase = 1;
                 }
-                if (titleState.timer >= 4000) { // 開始から4秒でフェードアウト開始
+                if (titleState.timer >= 4000) { 
                     titleState.phase = 2;
                 }
             } else if (titleState.phase === 1) { // Wait
-                if (titleState.timer >= 4000) { // 開始から4秒でフェードアウト開始
+                if (titleState.timer >= 4000) { 
                     titleState.phase = 2;
                 }
-            } else if (titleState.phase === 2) { // Fade Out (4秒かけてフェード、合計8秒)
-                // 4秒間(timerが4000から8000の間)でalphaを1から0にする
+            } else if (titleState.phase === 2) { // Fade Out
                 titleState.alpha = 1 - ((titleState.timer - 4000) / 4000);
                 
-                // ジングルのフェードアウト
                 if (titleState.jingle && bgmAudios[titleState.jingle]) {
                     const jingleAudio = bgmAudios[titleState.jingle];
                     if (!jingleAudio.paused) {
-                        let newVolume = 0.5 * titleState.alpha; // フェードに合わせて音量を下げる
+                        let newVolume = 0.5 * titleState.alpha; 
                         if (newVolume <= 0) {
                             newVolume = 0;
                             jingleAudio.pause();
@@ -1792,11 +1744,10 @@
                     }
                 }
 
-                if (titleState.timer >= 8000 || titleState.alpha <= 0) { // 開始から8秒で終了
+                if (titleState.timer >= 8000 || titleState.alpha <= 0) {
                     titleState.alpha = 0;
                     titleState.active = false;
                     state.uiVisible = true;
-                    // ジングルを確実に停止し音量を元に戻す
                     if (titleState.jingle && bgmAudios[titleState.jingle]) {
                         bgmAudios[titleState.jingle].pause();
                         bgmAudios[titleState.jingle].currentTime = 0;
@@ -1808,17 +1759,16 @@
             return;
         }
 
-        // ログの慣性スクロールとバネ処理
+        // ログの慣性スクロール
         if (state.showLog) {
             if (!isDraggingLog) {
                 if (Math.abs(logVelocityY) > 0.1) {
                     state.logScrollY += logVelocityY;
-                    logVelocityY *= 0.95; // 減衰係数
+                    logVelocityY *= 0.95; 
                 } else {
                     logVelocityY = 0;
                 }
 
-                // スクロール限界でのバネ処理
                 if (state.logScrollY > 0) {
                     state.logScrollY += (0 - state.logScrollY) * 0.2;
                     if (state.logScrollY < 0.5) state.logScrollY = 0;
@@ -1827,7 +1777,6 @@
                     if (state.logScrollY > state.maxLogScroll - 0.5) state.logScrollY = state.maxLogScroll;
                 }
             } else {
-                // ドラッグ中の限界超え抵抗
                 if (state.logScrollY > 0) {
                     state.logScrollY -= (state.logScrollY) * 0.1;
                 } else if (state.maxLogScroll !== undefined && state.logScrollY < state.maxLogScroll) {
@@ -1892,10 +1841,8 @@
     }
 
     canvas.addEventListener('pointerdown', (e) => {
-        // TAP TO START画面での初回タップ処理
         if (state.sceneId === "tap_to_start") {
             if (!hasInteracted) hasInteracted = true;
-            // AudioContextの有効化のみ行い、BGMの自動再生は防ぐ
             if (!audioCtx) audioCtx = new AudioContext();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
@@ -1905,7 +1852,6 @@
         }
 
         if (titleState.active) {
-            // タップされたら曲の長さを待たずにフェードアウトフェーズへ即座にスキップ移行
             if (titleState.timer < 4000) {
                 titleState.timer = 4000;
             } else {
@@ -1931,7 +1877,6 @@
             return;
         }
 
-        // 見た目のボタンアクティブ状態処理のみ
         if (state.uiVisible) {
             const sysBtn = LAYOUT.sysBtn;
             if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
@@ -1969,7 +1914,7 @@
 
         if (state.showLog) {
             isDraggingLog = false;
-            if (logDragDist < 10) { // 移動距離が少なければタップ判定で閉じる
+            if (logDragDist < 10) { 
                 state.showLog = false;
                 playSound('cancel');
             }
@@ -1981,7 +1926,6 @@
             return;
         }
 
-        // 座標から直接ボタンを判定する（スマホでのズレ・不発防止）
         state.sysBtnActive = false;
         state.logBtnActive = false;
         state.activeButtonIndex = -1;
@@ -2008,8 +1952,7 @@
         if (pos.x >= logBtn.x && pos.x <= logBtn.x + logBtn.w && pos.y >= logBtn.y && pos.y <= logBtn.y + logBtn.h) {
             playSound('select');
             state.showLog = true;
-            state.forceLogScrollBottom = true; // 開いた瞬間に最新を表示する
-            // ★修正：フォント設定をしてから計算する
+            state.forceLogScrollBottom = true; 
             ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
             state.maxLogScroll = calculateMaxLogScroll();
             return;
@@ -2038,7 +1981,7 @@
                         state.bgmEnabled = !state.bgmEnabled;
                         if (state.bgmEnabled) {
                             if (currentBgmKey !== "stop" && customBgmAudio) {
-                                customBgmAudio.currentTime = 0; // オンにした時も最初から
+                                customBgmAudio.currentTime = 0; 
                                 customBgmAudio.play().catch(e=>{});
                             }
                         } else {
@@ -2064,12 +2007,10 @@
                     return;
                 }
             }
-            // コマンド以外の領域タップでUI非表示
             if (pos.y < LAYOUT.window.y) {
                 state.uiVisible = false;
             }
         } else {
-            // テキスト送り
             if (state.isTyping) {
                 state.displayedText = state.fullText;
                 state.textIndex = state.fullText.length;
@@ -2078,11 +2019,9 @@
             else if (state.currentPage < state.textPages.length - 1) {
                 state.currentPage++;
                 state.fullText = state.textPages[state.currentPage];
-                // --- ログ追加 ---
                 if (state.log.length === 0 || state.log[state.log.length - 1] !== state.fullText) {
                     state.log.push(state.fullText);
                 }
-                // -------------
                 state.displayedText = "";
                 state.textIndex = 0;
                 state.isTyping = true;
@@ -2107,7 +2046,7 @@
     });
 
     window.onload = () => {
-        loadScene("tap_to_start"); // 起動時はTAP TO START画面を表示
+        loadScene("tap_to_start"); 
         loop();
     };
 </script>

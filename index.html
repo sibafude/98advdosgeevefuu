@@ -710,14 +710,14 @@
             charId: "ch_principal",
             text: [],
             commands: [
-                { label: "教室へ向かう", target: "ending" }
+                { label: "翌日へ", target: "ending" }
             ]
         },
         "ending": {
             bgId: "bg_classroom", 
             charId: "ch_homura",
             text: [
-                "数日後。晴れ渡る青空の下、冴島は教壇に立っていた。",
+                "翌日。晴れ渡る青空の下、冴島は教壇に立っていた。",
                 "冴島「よし、今日の日本史の講義はここまでだ。質問は……ないな？」",
                 "放課後のチャイムが鳴り、生徒たちが教室を去っていく中、ほむらだけが席に残っていた。",
                 "ほむら「冴島先生。……いえ、探偵の冴島さん。」",
@@ -1090,7 +1090,7 @@
             text: [
                 "冴島「そうだ、外務省の外交官だ。」",
                 "冴島「古書の盗難事件と、外交官の娘を狙った誘拐事件……。」",
-                "冴島「そして、砂漠の小国ワカナディアと、秘密の花『ワカナピピー』……。」",
+                "冴島「橘先生が口にした『ある組織』と、栞嬢が持っていた奇妙なメダル……。」",
                 "冴島「一見無関係に見える事件だが、この学園という舞台で奇妙に交錯している。」",
                 "冴島「明日、情報屋からの連絡を待って、さらに深く探りを入れるとしよう……。」",
                 "冴島「ふわぁ……。それにしても、今日は色々ありすぎて頭がショートしそうだ。」",
@@ -1102,7 +1102,7 @@
             bgId: "bg_warehouse_night",
             text: [],
             commands: [
-                { label: "To Be Continued...", target: "act1_end_title" }
+                { label: "次へ", target: "act1_end_title" }
             ]
         },
         "act2_start": {
@@ -1197,7 +1197,7 @@
             bgId: "bg_shiori_house",
             text: [],
             commands: [
-                { label: "To Be Continued...", target: "act2_end_title" }
+                { label: "次へ", target: "act2_end_title" }
             ]
         },
         // --- ゲームオーバー処理 ---
@@ -1229,7 +1229,7 @@
 
         // システムメニュー
         "system_menu": {
-            text: [], 
+            text: ["Ver 1.0.0"], 
             commands: [
                 { label: "セーブ", target: "sys_save" },
                 { label: "ロード", target: "sys_load" },
@@ -1261,6 +1261,34 @@
     /* =========================================
        ゲームロジック＆描画
        ========================================= */
+
+    function calculateMaxLogScroll() {
+        const padX = 30;
+        const maxWidth = WIDTH - padX * 2;
+        const lineHeight = 36;
+        let contentHeight = 0;
+        for (let i = 0; i < state.log.length; i++) {
+            const text = state.log[i];
+            const lines = text.split('\n');
+            for (let j = 0; j < lines.length; j++) {
+                let line = "";
+                const words = lines[j].split('');
+                for (let k = 0; k < words.length; k++) {
+                    const testLine = line + words[k];
+                    const metrics = ctx.measureText(testLine);
+                    if (metrics.width > maxWidth && k > 0) {
+                        line = words[k];
+                        contentHeight += lineHeight;
+                    } else {
+                        line = testLine;
+                    }
+                }
+                contentHeight += lineHeight;
+            }
+            contentHeight += lineHeight / 2; // ログ間の余白
+        }
+        return Math.min(0, HEIGHT - contentHeight - 100);
+    }
 
     function loadScene(sceneId) {
         if(!scenario[sceneId]) return;
@@ -1491,6 +1519,61 @@
             return; // 演出中は通常の描画をスキップ
         }
 
+        // ログ画面の描画
+        if (state.showLog) {
+            // スクロール補正
+            if (state.logScrollY > 0) state.logScrollY = 0;
+            if (state.maxLogScroll !== undefined && state.logScrollY < state.maxLogScroll) {
+                state.logScrollY = state.maxLogScroll;
+            }
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+
+            let currentY = 50 + state.logScrollY;
+            const padX = 30;
+            const maxWidth = WIDTH - padX * 2;
+            const lineHeight = 36;
+
+            for (let i = 0; i < state.log.length; i++) {
+                const text = state.log[i];
+                const lines = text.split('\n');
+                for (let j = 0; j < lines.length; j++) {
+                    let line = "";
+                    const words = lines[j].split('');
+                    for (let k = 0; k < words.length; k++) {
+                        const testLine = line + words[k];
+                        const metrics = ctx.measureText(testLine);
+                        if (metrics.width > maxWidth && k > 0) {
+                            if (currentY > -lineHeight && currentY < HEIGHT) {
+                                ctx.fillText(line, padX, currentY);
+                            }
+                            line = words[k];
+                            currentY += lineHeight;
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    if (currentY > -lineHeight && currentY < HEIGHT) {
+                        ctx.fillText(line, padX, currentY);
+                    }
+                    currentY += lineHeight;
+                }
+                currentY += lineHeight / 2; // ログ間の余白
+            }
+
+            // スクロール限界の計算
+            const contentHeight = currentY - state.logScrollY - 50;
+            state.maxLogScroll = Math.min(0, HEIGHT - contentHeight - 100);
+
+            return; // ログ表示中はここで描画終了
+        }
+
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -1611,6 +1694,10 @@
 
         // 4. ログ画面の描画（透過して上に重ねる）
         if (state.showLog) {
+            // スクロールのクランプ
+            if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
+            if (state.logScrollY > 0) state.logScrollY = 0;
+
             ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -1622,43 +1709,6 @@
             const padX = 30;
             const maxWidth = WIDTH - padX * 2;
             const lineHeight = 36;
-
-            // コンテンツ全体の高さを事前計算
-            let contentHeight = 0;
-            for (let i = 0; i < state.log.length; i++) {
-                const text = state.log[i];
-                if (!text) continue;
-                const lines = text.split('\n');
-                for (let j = 0; j < lines.length; j++) {
-                    let line = "";
-                    const words = lines[j].split('');
-                    for (let k = 0; k < words.length; k++) {
-                        const testLine = line + words[k];
-                        const metrics = ctx.measureText(testLine);
-                        if (metrics.width > maxWidth && k > 0) {
-                            line = words[k];
-                            contentHeight += lineHeight;
-                        } else {
-                            line = testLine;
-                        }
-                    }
-                    contentHeight += lineHeight;
-                }
-                contentHeight += lineHeight / 2; // ログ間の余白
-            }
-
-            // スクロール限界の計算
-            state.maxLogScroll = Math.min(0, HEIGHT - contentHeight - 100);
-
-            // ログを開いた瞬間に最新のログ（一番下）に合わせる
-            if (state.forceLogScrollBottom) {
-                state.logScrollY = state.maxLogScroll;
-                state.forceLogScrollBottom = false;
-            }
-
-            // スクロールのクランプ
-            if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
-            if (state.logScrollY > 0) state.logScrollY = 0;
 
             // 実際のログテキストの描画
             let currentY = 50 + state.logScrollY;
@@ -1959,6 +2009,9 @@
             playSound('select');
             state.showLog = true;
             state.forceLogScrollBottom = true; // 開いた瞬間に最新を表示する
+            // ★修正：フォント設定をしてから計算する
+            ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+            state.maxLogScroll = calculateMaxLogScroll();
             return;
         }
 

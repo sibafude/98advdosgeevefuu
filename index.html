@@ -13,7 +13,7 @@
         justify-content: center;
         align-items: center;
         height: 100vh;
-        height: 100dvh; /* アドレスバー対応：画面の上下が隠れないようにする */
+        height: 100dvh; 
         width: 100vw;
         overflow: hidden;
         user-select: none;
@@ -86,7 +86,7 @@
     /* =========================================
        ゲームシステム初期設定
        ========================================= */
-    const GAME_VERSION = "Ver 1.0.2"; // ゲームバージョンを更新
+    const GAME_VERSION = "Ver 1.0.4"; 
 
     const canvas = document.getElementById("game-canvas");
     const ctx = canvas.getContext("2d");
@@ -312,11 +312,11 @@
         titleState.nextScene = next;
         titleState.jingle = jingleKey;
 
-        if (customBgmAudio) customBgmAudio.pause(); // BGM一時停止
+        if (customBgmAudio) customBgmAudio.pause(); 
         
         if (jingleKey && bgmAudios[jingleKey] && state.bgmEnabled && hasInteracted) {
             bgmAudios[jingleKey].currentTime = 0;
-            bgmAudios[jingleKey].volume = 0.5; // 初期音量
+            bgmAudios[jingleKey].volume = 0.5; 
             bgmAudios[jingleKey].play().catch(e=>{});
         }
     }
@@ -361,6 +361,7 @@
        ========================================= */
     const scenario = {
         "tap_to_start": {
+            bgm: "stop",
             text: [], commands: []
         },
         "dummy_start": {
@@ -368,8 +369,17 @@
         },
         "act1_end_title": {
             onLoad: () => {
-                showTitle("ACT 1", "END", "act2_title", "jingle");
+                showTitle("ACT 1", "END", "act1_end_commands", "jingle");
             }
+        },
+        "act1_end_commands": {
+            bgId: "bg_warehouse_night",
+            text: [],
+            commands: [
+                { label: "次へ", target: "act2_title" },
+                { label: "セーブ", target: "sys_save" },
+                { label: "ロード", target: "sys_load" }
+            ]
         },
         "act2_title": {
             onLoad: () => {
@@ -1094,20 +1104,12 @@
             text: [
                 "冴島「そうだ、外務省の外交官だ。」",
                 "冴島「古書の盗難事件と、外交官の娘を狙った誘拐事件……。」",
-                "冴島「橘先生が口にした『ある組織』と、栞嬢が持っていた奇妙なメダル……。」",
                 "冴島「一見無関係に見える事件だが、この学園という舞台で奇妙に交錯している。」",
                 "冴島「明日、情報屋からの連絡を待って、さらに深く探りを入れるとしよう……。」",
                 "冴島「ふわぁ……。それにしても、今日は色々ありすぎて頭がショートしそうだ。」",
                 "冴島「限界だな……。今日はもう寝るとするか。」"
             ],
-            nextScene: "day_end_commands"
-        },
-        "day_end_commands": {
-            bgId: "bg_warehouse_night",
-            text: [],
-            commands: [
-                { label: "次へ", target: "act1_end_title" }
-            ]
+            nextScene: "act1_end_title" // 推理が終わったらそのままACT1のタイトルへ
         },
         "act2_start": {
             bgId: "bg_classroom", 
@@ -1195,13 +1197,22 @@
                 "水無月「頼んだぞ。報酬は十分に支払おう。」",
                 "冴島（肝心なことは何も言わなかったが、収穫はあった。中東の小国、軍事政権、そしてメダル……深い裏がありそうだぜ。）"
             ],
+            nextScene: "act2_tobecontinued"
+        },
+        "act2_tobecontinued": {
+            bgId: "bg_shiori_house",
+            text: [
+                "To Be Continued..."
+            ],
             nextScene: "act2_end_commands"
         },
         "act2_end_commands": {
             bgId: "bg_shiori_house",
             text: [],
             commands: [
-                { label: "次へ", target: "act2_end_title" }
+                { label: "セーブ", target: "sys_save" },
+                { label: "ロード", target: "sys_load" },
+                { label: "スタートへ", action: "back_to_start" }
             ]
         },
         // --- ゲームオーバー処理 ---
@@ -1229,6 +1240,36 @@
                 { label: "イベント前に戻る", target: "next_morning_greeting" },
                 { label: "ロード", action: "direct_load" }
             ]
+        },
+
+        // システムメニュー
+        "system_menu": {
+            text: [], // ここを空にしてテキスト表示モードを回避
+            commands: [
+                { label: "セーブ", target: "sys_save" },
+                { label: "ロード", target: "sys_load" },
+                { label: () => state.bgmEnabled ? "BGM: ON" : "BGM: OFF", action: "toggle_bgm" },
+                { label: "UI非表示", action: "hide_ui" },
+                { label: "開発ツール", action: "toggle_dev" },
+                { label: "戻る", action: "close_system" }
+            ]
+        },
+        "sys_save": {
+            text: ["今の状況を記録しておいたぞ。"],
+            onLoad: () => { localStorage.setItem("seiran_save_data", state.previousSceneId); },
+            commands: [ { label: "戻る", action: "close_system" } ]
+        },
+        "sys_load": {
+            text: ["記録を読み込んだぞ。"],
+            onLoad: () => { 
+                const saved = localStorage.getItem("seiran_save_data");
+                if(saved && scenario[saved]) {
+                    state.pendingLoadSceneId = saved;
+                } else {
+                    scenario["sys_load"].text = ["悪いな、セーブデータが見当たらないようだ。"];
+                }
+            },
+            commands: [ { label: "戻る", action: "close_system" } ]
         }
     };
 
@@ -1288,6 +1329,7 @@
         const expectedSceneId = sceneId;
         if (scene.onLoad) scene.onLoad();
         
+        // onLoad 内で別シーンに遷移した場合はその後の初期化処理を中断する
         if (state.sceneId !== expectedSceneId) return; 
 
         state.textPages = scene.text || [];
@@ -1361,12 +1403,13 @@
         const validCommands = commands.filter(cmd => !cmd.condition || cmd.condition());
         if(validCommands.length === 0) return;
         
+        // 複数列レイアウトに戻す
         const cols = validCommands.length > 4 ? 3 : (validCommands.length > 1 ? 2 : 1);
         const rows = Math.ceil(validCommands.length / cols); 
         
-        const padX = 120; 
+        const padX = cols === 1 ? 120 : 40; // 重ならないようにパディングを減らして横幅を広く
         const gapX = 15;
-        const gapY = 25; 
+        const gapY = 20; 
         
         const win = LAYOUT.window;
         
@@ -1569,7 +1612,7 @@
                 ctx.fillStyle = "#fff";
                 ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif"; 
                 
-                if (state.sceneId === "game_over") {
+                if (state.sceneId === "game_over" || state.sceneId === "act2_tobecontinued") {
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.shadowColor = "#000";
@@ -1624,7 +1667,7 @@
             if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
             if (state.logScrollY > 0) state.logScrollY = 0;
 
-            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // さらに透過
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
             ctx.fillStyle = "#fff";
@@ -1685,7 +1728,7 @@
                 }
             }
 
-            if (titleState.phase === 0) { // Fade In & Wait
+            if (titleState.phase === 0) { // Fade In (1秒) & Wait
                 titleState.alpha += dt / 1000;
                 if (titleState.alpha >= 1) {
                     titleState.alpha = 1;
@@ -1698,7 +1741,7 @@
                 if (titleState.timer >= 4000) { 
                     titleState.phase = 2;
                 }
-            } else if (titleState.phase === 2) { // Fade Out
+            } else if (titleState.phase === 2) { // Fade Out (4秒かけてフェード、合計8秒)
                 titleState.alpha = 1 - ((titleState.timer - 4000) / 4000);
                 
                 if (titleState.jingle && bgmAudios[titleState.jingle]) {
@@ -1852,16 +1895,19 @@
             const sysBtn = LAYOUT.sysBtn;
             if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
                 state.sysBtnActive = true;
+                return;
             }
             const logBtn = LAYOUT.logBtn;
             if (pos.x >= logBtn.x && pos.x <= logBtn.x + logBtn.w && pos.y >= logBtn.y && pos.y <= logBtn.y + logBtn.h) {
                 state.logBtnActive = true;
+                return;
             }
             if (state.showCommands) {
                 for (let i = 0; i < state.buttons.length; i++) {
                     const btn = state.buttons[i];
                     if (pos.x >= btn.x && pos.x <= btn.x + btn.w && pos.y >= btn.y && pos.y <= btn.y + btn.h) {
                         state.activeButtonIndex = i;
+                        return;
                     }
                 }
             }
@@ -1897,115 +1943,125 @@
             return;
         }
 
-        state.sysBtnActive = false;
-        state.logBtnActive = false;
-        state.activeButtonIndex = -1;
-
-        const sysBtn = LAYOUT.sysBtn;
-        if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
-            playSound('select');
-            if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
-                if (state.pendingLoadSceneId) {
-                    let id = state.pendingLoadSceneId;
-                    state.pendingLoadSceneId = null;
-                    stateBackup = null;
-                    loadScene(id);
+        if (state.sysBtnActive) {
+            state.sysBtnActive = false;
+            const sysBtn = LAYOUT.sysBtn;
+            if (pos.x >= sysBtn.x && pos.x <= sysBtn.x + sysBtn.w && pos.y >= sysBtn.y && pos.y <= sysBtn.y + sysBtn.h) {
+                playSound('select');
+                if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
+                    if (state.pendingLoadSceneId) {
+                        let id = state.pendingLoadSceneId;
+                        state.pendingLoadSceneId = null;
+                        stateBackup = null;
+                        loadScene(id);
+                    } else {
+                        closeSystemMenu();
+                    }
                 } else {
-                    closeSystemMenu();
+                    openSystemMenu();
                 }
-            } else {
-                openSystemMenu();
             }
-            return;
+            return; // 押したまま外にずらして離した場合、テキスト送りを防ぐためにreturn
         }
 
-        const logBtn = LAYOUT.logBtn;
-        if (pos.x >= logBtn.x && pos.x <= logBtn.x + logBtn.w && pos.y >= logBtn.y && pos.y <= logBtn.y + logBtn.h) {
-            playSound('select');
-            state.showLog = true;
-            state.forceLogScrollBottom = true; 
-            ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
-            state.maxLogScroll = calculateMaxLogScroll();
-            return;
+        if (state.logBtnActive) {
+            state.logBtnActive = false;
+            const logBtn = LAYOUT.logBtn;
+            if (pos.x >= logBtn.x && pos.x <= logBtn.x + logBtn.w && pos.y >= logBtn.y && pos.y <= logBtn.y + logBtn.h) {
+                playSound('select');
+                state.showLog = true;
+                state.forceLogScrollBottom = true; 
+                ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
+                state.maxLogScroll = calculateMaxLogScroll();
+            }
+            return; // 押したまま外にずらして離した場合、テキスト送りを防ぐためにreturn
         }
 
+        if (state.showCommands && state.activeButtonIndex !== -1) {
+            const btn = state.buttons[state.activeButtonIndex];
+            state.activeButtonIndex = -1; // 先にリセット
+            if (pos.x >= btn.x && pos.x <= btn.x + btn.w && pos.y >= btn.y && pos.y <= btn.y + btn.h) {
+                if(btn.label === "戻る") playSound('cancel');
+                else playSound('select');
+
+                if (btn.target) {
+                    loadScene(btn.target);
+                } 
+                else if (btn.action === "toggle_dev") {
+                    const devTools = document.getElementById('dev-tools');
+                    devTools.style.display = (devTools.style.display === "none" || devTools.style.display === "") ? "block" : "none";
+                    closeSystemMenu(); 
+                }
+                else if (btn.action === "hide_ui") {
+                    state.uiVisible = false;
+                    closeSystemMenu(); 
+                }
+                else if (btn.action === "toggle_bgm") {
+                    state.bgmEnabled = !state.bgmEnabled;
+                    if (state.bgmEnabled) {
+                        if (currentBgmKey !== "stop" && customBgmAudio) {
+                            customBgmAudio.currentTime = 0; 
+                            customBgmAudio.play().catch(e=>{});
+                        }
+                    } else {
+                        if (customBgmAudio) customBgmAudio.pause();
+                    }
+                    calculateButtons(scenario[state.sceneId].commands);
+                }
+                else if (btn.action === "close_system") {
+                    if (state.pendingLoadSceneId) {
+                        let id = state.pendingLoadSceneId;
+                        state.pendingLoadSceneId = null;
+                        stateBackup = null;
+                        loadScene(id);
+                    } else {
+                        closeSystemMenu(); 
+                    }
+                }
+                else if (btn.action === "direct_load") {
+                    const saved = localStorage.getItem("seiran_save_data");
+                    if (saved && scenario[saved]) loadScene(saved);
+                    else loadScene("start"); 
+                }
+                else if (btn.action === "back_to_start") {
+                    loadScene("tap_to_start");
+                }
+            }
+            return; // コマンドボタンを押した場合はここで終了（テキスト送りを防ぐ）
+        }
+
+        // コマンド表示中の場合はテキスト送りをしない（UI非表示だけ）
         if (state.showCommands) {
-            for (let i = 0; i < state.buttons.length; i++) {
-                const btn = state.buttons[i];
-                if (pos.x >= btn.x && pos.x <= btn.x + btn.w && pos.y >= btn.y && pos.y <= btn.y + btn.h) {
-                    if(btn.label === "戻る") playSound('cancel');
-                    else playSound('select');
-
-                    if (btn.target) {
-                        loadScene(btn.target);
-                    } 
-                    else if (btn.action === "toggle_dev") {
-                        const devTools = document.getElementById('dev-tools');
-                        devTools.style.display = (devTools.style.display === "none" || devTools.style.display === "") ? "block" : "none";
-                        closeSystemMenu(); 
-                    }
-                    else if (btn.action === "hide_ui") {
-                        state.uiVisible = false;
-                        closeSystemMenu(); 
-                    }
-                    else if (btn.action === "toggle_bgm") {
-                        state.bgmEnabled = !state.bgmEnabled;
-                        if (state.bgmEnabled) {
-                            if (currentBgmKey !== "stop" && customBgmAudio) {
-                                customBgmAudio.currentTime = 0; 
-                                customBgmAudio.play().catch(e=>{});
-                            }
-                        } else {
-                            if (customBgmAudio) customBgmAudio.pause();
-                        }
-                        calculateButtons(scenario[state.sceneId].commands);
-                    }
-                    else if (btn.action === "close_system") {
-                        if (state.pendingLoadSceneId) {
-                            let id = state.pendingLoadSceneId;
-                            state.pendingLoadSceneId = null;
-                            stateBackup = null;
-                            loadScene(id);
-                        } else {
-                            closeSystemMenu(); 
-                        }
-                    }
-                    else if (btn.action === "direct_load") {
-                        const saved = localStorage.getItem("seiran_save_data");
-                        if (saved && scenario[saved]) loadScene(saved);
-                        else loadScene("start"); 
-                    }
-                    return;
-                }
-            }
             if (pos.y < LAYOUT.window.y) {
                 state.uiVisible = false;
             }
-        } else {
-            if (state.isTyping) {
-                state.displayedText = state.fullText;
-                state.textIndex = state.fullText.length;
-                state.isTyping = false;
-            } 
-            else if (state.currentPage < state.textPages.length - 1) {
-                state.currentPage++;
-                state.fullText = state.textPages[state.currentPage];
-                if (state.log.length === 0 || state.log[state.log.length - 1] !== state.fullText) {
-                    state.log.push(state.fullText);
-                }
-                state.displayedText = "";
-                state.textIndex = 0;
-                state.isTyping = true;
-                playSound('select');
+            return;
+        }
+
+        // --- テキスト送り処理 ---
+        if (state.isTyping) {
+            state.displayedText = state.fullText;
+            state.textIndex = state.fullText.length;
+            state.isTyping = false;
+        } 
+        else if (state.currentPage < state.textPages.length - 1) {
+            state.currentPage++;
+            state.fullText = state.textPages[state.currentPage];
+            if (state.log.length === 0 || state.log[state.log.length - 1] !== state.fullText) {
+                state.log.push(state.fullText);
             }
-            else if (state.buttons.length > 0) {
-                state.showCommands = true;
-                playSound('select');
-            }
-            else if (scenario[state.sceneId].nextScene) {
-                loadScene(scenario[state.sceneId].nextScene);
-                playSound('select');
-            }
+            state.displayedText = "";
+            state.textIndex = 0;
+            state.isTyping = true;
+            playSound('select');
+        }
+        else if (state.buttons.length > 0) {
+            state.showCommands = true;
+            playSound('select');
+        }
+        else if (scenario[state.sceneId].nextScene) {
+            loadScene(scenario[state.sceneId].nextScene);
+            playSound('select');
         }
     });
 

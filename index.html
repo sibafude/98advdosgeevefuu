@@ -13,6 +13,8 @@
         justify-content: center;
         align-items: center;
         height: 100vh;
+        height: 100dvh; /* アドレスバー対応：画面の上下が隠れないようにする */
+        width: 100vw;
         overflow: hidden;
         user-select: none;
         -webkit-user-select: none;
@@ -84,7 +86,7 @@
     /* =========================================
        ゲームシステム初期設定
        ========================================= */
-    const GAME_VERSION = "Ver 1.0.1"; // ゲームバージョン
+    const GAME_VERSION = "Ver 1.0.2"; // ゲームバージョンを更新
 
     const canvas = document.getElementById("game-canvas");
     const ctx = canvas.getContext("2d");
@@ -458,7 +460,7 @@
         },
         "clocktower_enter": {
             bgId: "bg_clocktower",
-            bgm: "stop", 
+            bgm: "stop", // 時計塔の入り口は不気味な静けさ
             text: [
                 "冴島「ここが時計塔の入り口か。立派なアンティーク調の扉だが、しっかりと鍵がかかっているな。」",
                 "冴島「ん……？ 誰か近づいてくるな。」"
@@ -476,7 +478,7 @@
         "clocktower_hide": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
-            bgm: "bgm_tension", 
+            bgm: "bgm_tension", // 遭遇時に緊迫感
             text: [
                 "？？？「……ふぅ。これで仕込みは完璧ね。」",
                 "冴島（あの女性は……今朝挨拶した、新任教師の橘結衣だな。時計塔の中から出てきたのか？）",
@@ -530,7 +532,7 @@
         },
         "clocktower_post_yui": {
             bgId: "bg_clocktower",
-            bgm: "bgm", 
+            bgm: "bgm", // 立ち去った後は通常のBGMに戻す
             text: [
                 "冴島「橘先生が立ち去ったな。さて、もう少し周囲を調べてみるか。」"
             ],
@@ -601,7 +603,7 @@
         },
         "deduction": {
             bgId: "bg_clocktower",
-            bgm: "bgm_tension", 
+            bgm: "bgm_tension", // 推理の盛り上がり
             text: [
                 "冴島「よし、新任教師の橘と用務員の森下、そして図書室の証拠……すべてが結びついた。」",
                 "冴島「犯人はひそかに作った合鍵を使い、夕暮れ時に作動する超音波発振器を仕掛けた。ハトが騒いだのはその超音波のせいだ。」",
@@ -621,7 +623,7 @@
         "ambush": {
             bgId: "bg_clocktower",
             charId: "ch_homura",
-            bgm: "stop", 
+            bgm: "stop", // 待ち伏せの緊張感のための無音
             text: [
                 "冴島「夕暮れまであと少しだ。ここで張っていれば、犯人が発振器の回収、あるいは次の仕掛けをしに現れるはずだ。」",
                 "ほむら「……やっぱり、ただの実習生じゃなかったんですね。」",
@@ -650,7 +652,7 @@
         "confrontation": {
             bgId: "bg_clocktower",
             charId: "ch_yui",
-            bgm: "bgm_tension", 
+            bgm: "bgm_tension", // 犯人との対峙
             text: [
                 "冴島「そこまでだ、橘先生。」",
                 "橘「っ！？ ……だ、誰ですか、人の見学を邪魔する不審者は！」",
@@ -693,7 +695,7 @@
         "report_to_principal": {
             bgId: "bg_office",
             charId: "ch_principal",
-            bgm: "bgm", 
+            bgm: "bgm", // 対決後の落ち着いたBGM
             text: [
                 "俺は橘先生に同行を願い、学園長室へ向かった。",
                 "冴島「学園長。例の『時計塔の悪魔』の正体と、盗まれた古書をお持ちしました。」",
@@ -1227,36 +1229,6 @@
                 { label: "イベント前に戻る", target: "next_morning_greeting" },
                 { label: "ロード", action: "direct_load" }
             ]
-        },
-
-        // システムメニュー
-        "system_menu": {
-            text: [], 
-            commands: [
-                { label: "セーブ", target: "sys_save" },
-                { label: "ロード", target: "sys_load" },
-                { label: () => state.bgmEnabled ? "BGM: ON" : "BGM: OFF", action: "toggle_bgm" },
-                { label: "UI非表示", action: "hide_ui" },
-                { label: "開発ツール", action: "toggle_dev" },
-                { label: "戻る", action: "close_system" }
-            ]
-        },
-        "sys_save": {
-            text: ["今の状況を記録しておいたぞ。"],
-            onLoad: () => { localStorage.setItem("seiran_save_data", state.previousSceneId); },
-            commands: [ { label: "戻る", action: "close_system" } ]
-        },
-        "sys_load": {
-            text: ["記録を読み込んだぞ。"],
-            onLoad: () => { 
-                const saved = localStorage.getItem("seiran_save_data");
-                if(saved && scenario[saved]) {
-                    state.pendingLoadSceneId = saved;
-                } else {
-                    scenario["sys_load"].text = ["悪いな、セーブデータが見当たらないようだ。"];
-                }
-            },
-            commands: [ { label: "戻る", action: "close_system" } ]
         }
     };
 
@@ -1316,7 +1288,6 @@
         const expectedSceneId = sceneId;
         if (scene.onLoad) scene.onLoad();
         
-        // onLoad 内で別シーンに遷移した場合はその後の初期化処理を中断する
         if (state.sceneId !== expectedSceneId) return; 
 
         state.textPages = scene.text || [];
@@ -1560,6 +1531,16 @@
                 ctx.strokeRect(win.x, win.y, win.w, win.h);
             }
 
+            // バージョン情報の表示（システムメニュー時、UIパネル内に収める）
+            if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
+                ctx.fillStyle = "#888";
+                ctx.font = "bold 16px sans-serif";
+                ctx.textAlign = "right";
+                ctx.textBaseline = "middle";
+                ctx.fillText(GAME_VERSION, win.x + win.w - 15, win.y + 25);
+                ctx.textBaseline = "alphabetic"; 
+            }
+
             // システムボタン描画
             const sysBtn = LAYOUT.sysBtn;
             ctx.fillStyle = state.sysBtnActive ? "#ffeb3b" : "#ccc";
@@ -1637,20 +1618,9 @@
             }
         }
 
-        // バージョン情報の表示（システム関連画面を開いている時）
-        if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
-            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.fillRect(WIDTH - 120, 10, 110, 30);
-            ctx.fillStyle = "#fff";
-            ctx.font = "bold 16px sans-serif";
-            ctx.textAlign = "right";
-            ctx.textBaseline = "middle";
-            ctx.fillText(GAME_VERSION, WIDTH - 20, 25);
-            ctx.textBaseline = "alphabetic"; 
-        }
-
         // 4. ログ画面の描画（透過して上に重ねる）
         if (state.showLog) {
+            // スクロールのクランプ
             if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
             if (state.logScrollY > 0) state.logScrollY = 0;
 
@@ -1666,6 +1636,7 @@
             const maxWidth = WIDTH - padX * 2;
             const lineHeight = 36;
 
+            // 実際のログテキストの描画
             let currentY = 50 + state.logScrollY;
             for (let i = 0; i < state.log.length; i++) {
                 const text = state.log[i];

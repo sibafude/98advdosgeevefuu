@@ -86,7 +86,7 @@
     /* =========================================
        ゲームシステム初期設定
        ========================================= */
-    const GAME_VERSION = "Ver 1.0.9"; 
+    const GAME_VERSION = "Ver 1.0.14"; 
 
     const canvas = document.getElementById("game-canvas");
     const ctx = canvas.getContext("2d");
@@ -103,6 +103,13 @@
     // --- アセット管理 ---
     const imageCache = {};
     const fallbackImages = {
+        "op_1": "https://placehold.co/720x1280/0a0a0a/FFF?text=OP+Scene+1",
+        "op_2": "https://placehold.co/720x1280/1a1a1a/FFF?text=OP+Scene+2",
+        "op_3": "https://placehold.co/720x1280/2a2a2a/FFF?text=OP+Scene+3",
+        "op_4": "https://placehold.co/720x1280/3a3a3a/FFF?text=OP+Scene+4",
+        "op_5": "https://placehold.co/720x1280/4a4a4a/FFF?text=OP+Scene+5",
+        "op_6": "https://placehold.co/720x1280/5a5a5a/FFF?text=OP+Scene+6",
+        "op_7": "https://placehold.co/720x1280/6a6a6a/FFF?text=OP+Scene+7",
         "bg_title": "https://placehold.co/720x1280/1a1a2e/FFF?text=Wakanadia+Title", 
         "bg_gate": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nSchool+Gate+(Sunset)",
         "bg_gate_morning": "https://placehold.co/720x1280/87ceeb/000?text=Background:\\nSchool+Gate+(Morning)", 
@@ -149,8 +156,7 @@
     let defaultBgmInterval = null;
     let currentNote = 0;
 
-    // 複数BGM対応 
-    const bgmKeys = ["bgm", "bgm_tension", "bgm_night", "jingle", "bgm_title"];
+    const bgmKeys = ["bgm", "bgm_tension", "bgm_night", "jingle", "bgm_op", "bgm_title"];
     const bgmAudios = {};
 
     bgmKeys.forEach(key => {
@@ -291,7 +297,7 @@
         }
     }
 
-    // --- タイトル演出ステータス ---
+    // --- タイトル文字演出ステータス ---
     let titleState = {
         active: false,
         phase: 0, 
@@ -322,32 +328,37 @@
         }
     }
 
-    // --- 画像付きタイトル演出ステータス ---
-    let imageTitleState = {
+    // --- オープニング演出ステータス ---
+    let openingState = {
         active: false,
-        phase: 0, // 0: フェードイン, 1: タップ待機, 2: フェードアウト
+        phase: 0, 
         alpha: 0,
         timer: 0,
-        imageId: "",
+        timerInWait: 0,
+        images: [],
+        currentIndex: 0,
         bgmKey: "",
         nextScene: ""
     };
 
-    function showImageTitle(imageId, bgmKey, nextScene) {
-        imageTitleState.active = true;
-        imageTitleState.phase = 0;
-        imageTitleState.alpha = 0;
-        imageTitleState.timer = 0;
-        imageTitleState.imageId = imageId;
-        imageTitleState.bgmKey = bgmKey;
-        imageTitleState.nextScene = nextScene;
+    function showOpening(images, bgmKey, nextScene) {
+        openingState.active = true;
+        openingState.phase = 0;
+        openingState.alpha = 0;
+        openingState.timer = 0;
+        openingState.timerInWait = 0;
+        openingState.images = images;
+        openingState.currentIndex = 0;
+        openingState.bgmKey = bgmKey;
+        openingState.nextScene = nextScene;
 
         if (customBgmAudio) customBgmAudio.pause(); 
-        
-        if (bgmKey && bgmAudios[bgmKey] && state.bgmEnabled && hasInteracted) {
-            bgmAudios[bgmKey].currentTime = 0;
-            bgmAudios[bgmKey].volume = 0.5; 
-            bgmAudios[bgmKey].play().catch(e=>{});
+        currentBgmKey = bgmKey;
+        customBgmAudio = bgmAudios[bgmKey];
+        if (customBgmAudio && state.bgmEnabled && hasInteracted) {
+            customBgmAudio.currentTime = 0;
+            customBgmAudio.volume = 0.5; 
+            customBgmAudio.play().catch(e=>{});
         }
     }
 
@@ -413,7 +424,17 @@
         },
         "intermission_title": {
             onLoad: () => {
-                showImageTitle("bg_title", "bgm_title", "act2_title");
+                openingState.images = [
+                    { id: "op_1", in: 1500, wait: 3500, out: 1000, pan: "none" },
+                    { id: "op_2", in: 100, wait: 400, out: 100, pan: "none" },
+                    { id: "op_3", in: 100, wait: 400, out: 100, pan: "none" },
+                    { id: "op_4", in: 100, wait: 400, out: 100, pan: "none" },
+                    { id: "op_5", in: 800, wait: 3000, out: 1000, pan: "none" },
+                    { id: "op_6", in: 1000, wait: 1500, out: 1000, pan: "none" },
+                    { id: "op_7", in: 1500, wait: 3000, out: 1000, pan: "up" },
+                    { id: "bg_title", in: 2000, wait: Infinity, out: 1500, pan: "contain" } 
+                ];
+                showOpening(openingState.images, "bgm_op", "act2_title");
             }
         },
         "act2_title": {
@@ -670,7 +691,7 @@
             charId: "ch_homura",
             bgm: "stop", 
             text: [
-                "冴島「夕暮れまであと少しだ。ここで張っていれば、犯人が発振器の回収、あるいは次の仕掛けをしに現れるはずだ。」",
+                "冴島「夕暮れまであと少しだ。ここで張っていれば、犯 বহুমが発振器の回収、あるいは次の仕掛けをしに現れるはずだ。」",
                 "ほむら「……やっぱり、ただの実習生じゃなかったんですね。」",
                 "冴島「おっと、ほむら嬢。危ないから帰った方がいいぜ。」",
                 "ほむら「私も図書委員として、本を盗んだ犯人の顔を見ておきたいんです。邪魔はしませんから。」",
@@ -1320,6 +1341,7 @@
         let contentHeight = 50; 
         for (let i = 0; i < state.log.length; i++) {
             const text = state.log[i];
+            if (!text) continue;
             const lines = text.split('\n');
             for (let j = 0; j < lines.length; j++) {
                 let line = "";
@@ -1338,7 +1360,7 @@
             }
             contentHeight += lineHeight / 2; 
         }
-        return Math.min(0, HEIGHT - contentHeight - 150); 
+        return Math.min(0, HEIGHT - contentHeight - 80); 
     }
 
     function loadScene(sceneId) {
@@ -1471,9 +1493,37 @@
         });
     }
 
-    function drawBackground(img, targetX, targetY, targetW, targetH) {
+    function drawBackground(img, targetX, targetY, targetW, targetH, panType = "none", panProgress = 0) {
+        if (panType === "contain") {
+            const imgRatio = img.width / img.height;
+            const targetRatio = targetW / targetH;
+            let drawW = targetW;
+            let drawH = targetH;
+            let dX = targetX;
+            let dY = targetY;
+
+            if (imgRatio > targetRatio) {
+                drawH = targetW / imgRatio;
+                dY = targetY + (targetH - drawH) / 2;
+            } else {
+                drawW = targetH * imgRatio;
+                dX = targetX + (targetW - drawW) / 2;
+            }
+            ctx.drawImage(img, dX, dY, drawW, drawH);
+            return;
+        }
+
+        let scaleMulti = 1.0;
+        if (panType === "up" || panType === "down") {
+            scaleMulti = 1.2; 
+        }
+
         const imgRatio = img.width / img.height;
         const targetRatio = targetW / targetH;
+        
+        let drawW = targetW * scaleMulti;
+        let drawH = targetH * scaleMulti;
+        
         let sWidth = img.width;
         let sHeight = img.height;
         let sX = 0;
@@ -1486,7 +1536,26 @@
             sHeight = img.width / targetRatio;
             sY = (img.height - sHeight) / 2;
         }
-        ctx.drawImage(img, sX, sY, sWidth, sHeight, targetX, targetY, targetW, targetH);
+
+        let dX = targetX - (drawW - targetW) / 2; 
+        let dY = targetY - (drawH - targetH) / 2; 
+
+        if (panType === "up") {
+            const maxOffset = drawH - targetH;
+            dY = targetY - maxOffset * (1 - panProgress);
+        } else if (panType === "down") {
+            const maxOffset = drawH - targetH;
+            dY = targetY - maxOffset * panProgress;
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(targetX, targetY, targetW, targetH);
+        ctx.clip();
+        
+        ctx.drawImage(img, sX, sY, sWidth, sHeight, dX, dY, drawW, drawH);
+        
+        ctx.restore();
     }
 
     function drawCharacter(img) {
@@ -1565,13 +1634,29 @@
             return; 
         }
 
-        if (imageTitleState.active) {
+        if (openingState.active) {
             ctx.fillStyle = "#000";
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
             
-            if (imageCache[imageTitleState.imageId] && imageCache[imageTitleState.imageId].complete) {
-                ctx.globalAlpha = imageTitleState.alpha;
-                drawBackground(imageCache[imageTitleState.imageId], 0, 0, WIDTH, HEIGHT);
+            const config = openingState.images[openingState.currentIndex];
+            if (imageCache[config.id] && imageCache[config.id].complete) {
+                ctx.globalAlpha = openingState.alpha;
+                
+                let panProgress = 0;
+                if (config.pan !== "none" && config.pan !== "contain") {
+                    let elapsed = 0;
+                    const waitTime = config.wait === Infinity ? 10000 : config.wait;
+                    if (openingState.phase === 0) elapsed = openingState.timer;
+                    if (openingState.phase === 1) elapsed = config.in + openingState.timer;
+                    if (openingState.phase === 2) {
+                        const currentWait = openingState.timerInWait || waitTime; 
+                        elapsed = config.in + currentWait + openingState.timer;
+                    }
+                    let duration = config.in + waitTime + config.out;
+                    panProgress = Math.min(1.0, Math.max(0.0, elapsed / duration));
+                }
+
+                drawBackground(imageCache[config.id], 0, 0, WIDTH, HEIGHT, config.pan, panProgress);
                 ctx.globalAlpha = 1.0;
             }
             return;
@@ -1615,13 +1700,13 @@
                 ctx.strokeRect(win.x, win.y, win.w, win.h);
             }
 
-            // バージョン表示（0.5文字上へ、さらに右へ）
+            // バージョン表示（1.5文字上へ、7文字左へ）
             if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
                 ctx.fillStyle = "#888";
                 ctx.font = "bold 16px sans-serif";
                 ctx.textAlign = "right";
                 ctx.textBaseline = "middle";
-                ctx.fillText(GAME_VERSION, win.x + win.w - 15, win.y + 17);
+                ctx.fillText(GAME_VERSION, win.x + win.w - 79, win.y + 33);
                 ctx.textBaseline = "alphabetic"; 
             }
 
@@ -1700,6 +1785,7 @@
             }
         }
 
+        // 4. ログ画面の描画（透過して上に重ねる）
         if (state.showLog) {
             if (state.logScrollY < state.maxLogScroll) state.logScrollY = state.maxLogScroll;
             if (state.logScrollY > 0) state.logScrollY = 0;
@@ -1808,24 +1894,35 @@
             return;
         }
 
-        if (imageTitleState.active) {
-            imageTitleState.timer += dt;
+        if (openingState.active) {
+            openingState.timer += dt;
+            const config = openingState.images[openingState.currentIndex];
+            const isLastImage = openingState.currentIndex === openingState.images.length - 1;
 
-            if (imageTitleState.phase === 0) { 
-                imageTitleState.alpha += dt / 2000;
-                if (imageTitleState.alpha >= 1) {
-                    imageTitleState.alpha = 1;
-                    imageTitleState.phase = 1;
+            if (openingState.phase === 0) { 
+                openingState.alpha += dt / config.in;
+                if (openingState.alpha >= 1) {
+                    openingState.alpha = 1;
+                    openingState.phase = 1;
+                    openingState.timer = 0; 
                 }
-            } else if (imageTitleState.phase === 1) { 
-                // タップ待ちのためタイマーによる自動進行なし
-            } else if (imageTitleState.phase === 2) { 
-                imageTitleState.alpha -= dt / 2000;
+            } else if (openingState.phase === 1) { 
+                if (isLastImage) {
+                    // 最後の画像はタップ待機
+                } else {
+                    if (openingState.timer >= config.wait) { 
+                        openingState.timerInWait = openingState.timer;
+                        openingState.phase = 2;
+                        openingState.timer = 0;
+                    }
+                }
+            } else if (openingState.phase === 2) { 
+                openingState.alpha -= dt / config.out;
                 
-                if (imageTitleState.bgmKey && bgmAudios[imageTitleState.bgmKey]) {
-                    const audio = bgmAudios[imageTitleState.bgmKey];
+                if (isLastImage && openingState.bgmKey && bgmAudios[openingState.bgmKey]) {
+                    const audio = bgmAudios[openingState.bgmKey];
                     if (!audio.paused) {
-                        let newVolume = 0.5 * imageTitleState.alpha; 
+                        let newVolume = 0.5 * openingState.alpha; 
                         if (newVolume <= 0) {
                             newVolume = 0;
                             audio.pause();
@@ -1836,16 +1933,23 @@
                     }
                 }
 
-                if (imageTitleState.alpha <= 0) {
-                    imageTitleState.alpha = 0;
-                    imageTitleState.active = false;
-                    state.uiVisible = true;
-                    if (imageTitleState.bgmKey && bgmAudios[imageTitleState.bgmKey]) {
-                        bgmAudios[imageTitleState.bgmKey].pause();
-                        bgmAudios[imageTitleState.bgmKey].currentTime = 0;
-                        bgmAudios[imageTitleState.bgmKey].volume = 0.5;
+                if (openingState.alpha <= 0) {
+                    openingState.alpha = 0;
+                    openingState.currentIndex++;
+                    
+                    if (openingState.currentIndex >= openingState.images.length) {
+                        openingState.active = false;
+                        state.uiVisible = true;
+                        if (openingState.bgmKey && bgmAudios[openingState.bgmKey]) {
+                            bgmAudios[openingState.bgmKey].pause();
+                            bgmAudios[openingState.bgmKey].currentTime = 0;
+                            bgmAudios[openingState.bgmKey].volume = 0.5;
+                        }
+                        loadScene(openingState.nextScene);
+                    } else {
+                        openingState.phase = 0;
+                        openingState.timer = 0;
                     }
-                    loadScene(imageTitleState.nextScene);
                 }
             }
             return;
@@ -1959,11 +2063,21 @@
             return;
         }
 
-        if (imageTitleState.active) {
-            if (imageTitleState.phase === 0 || imageTitleState.phase === 1) {
-                imageTitleState.phase = 2; 
-                imageTitleState.alpha = 1; 
-                imageTitleState.timer = 5000;
+        if (openingState.active) {
+            const isLastImage = openingState.currentIndex === openingState.images.length - 1;
+            if (isLastImage) {
+                if (openingState.phase === 0 || openingState.phase === 1) {
+                    openingState.timerInWait = openingState.timer;
+                    openingState.phase = 2;
+                    openingState.alpha = 1;
+                    openingState.timer = 0;
+                }
+            } else {
+                // 途中なら即座に次の画像へ
+                openingState.currentIndex++;
+                openingState.phase = 0;
+                openingState.alpha = 0;
+                openingState.timer = 0;
             }
             return;
         }
@@ -2057,7 +2171,7 @@
         isPointerDown = false;
         
         if (titleState.active) return;
-        if (imageTitleState.active) return;
+        if (openingState.active) return;
 
         const pos = getPointerPos(e);
 
@@ -2101,6 +2215,8 @@
             state.forceLogScrollBottom = true; 
             ctx.font = "24px 'ヒラギノ明朝 ProN', 'MS P明朝', serif";
             state.maxLogScroll = calculateMaxLogScroll();
+            state.logScrollY = state.maxLogScroll; 
+            logVelocityY = 0;
             activeButtonType = null;
             return; 
         }

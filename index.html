@@ -86,7 +86,7 @@
     /* =========================================
        ゲームシステム初期設定
        ========================================= */
-    const GAME_VERSION = "Ver 1.0.14"; 
+    const GAME_VERSION = "Ver 1.0.17"; 
 
     const canvas = document.getElementById("game-canvas");
     const ctx = canvas.getContext("2d");
@@ -110,6 +110,8 @@
         "op_5": "https://placehold.co/720x1280/4a4a4a/FFF?text=OP+Scene+5",
         "op_6": "https://placehold.co/720x1280/5a5a5a/FFF?text=OP+Scene+6",
         "op_7": "https://placehold.co/720x1280/6a6a6a/FFF?text=OP+Scene+7",
+        "op_8": "https://placehold.co/720x1280/7a7a7a/FFF?text=OP+Scene+8",
+        "op_9": "https://placehold.co/720x1280/8a8a8a/FFF?text=OP+Scene+9",
         "bg_title": "https://placehold.co/720x1280/1a1a2e/FFF?text=Wakanadia+Title", 
         "bg_gate": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nSchool+Gate+(Sunset)",
         "bg_gate_morning": "https://placehold.co/720x1280/87ceeb/000?text=Background:\\nSchool+Gate+(Morning)", 
@@ -429,10 +431,12 @@
                     { id: "op_2", in: 100, wait: 400, out: 100, pan: "none" },
                     { id: "op_3", in: 100, wait: 400, out: 100, pan: "none" },
                     { id: "op_4", in: 100, wait: 400, out: 100, pan: "none" },
-                    { id: "op_5", in: 800, wait: 3000, out: 1000, pan: "none" },
-                    { id: "op_6", in: 1000, wait: 1500, out: 1000, pan: "none" },
-                    { id: "op_7", in: 1500, wait: 3000, out: 1000, pan: "up" },
-                    { id: "bg_title", in: 2000, wait: Infinity, out: 1500, pan: "contain" } 
+                    { id: "op_5", in: 800, wait: 2000, out: 1000, pan: "none" },
+                    { id: "op_6", in: 500, wait: 1500, out: 1000, pan: "none" },
+                    { id: "op_7", in: 50, wait: 100, out: 50, pan: "none" },
+                    { id: "op_8", in: 50, wait: 100, out: 50, pan: "none" },
+                    { id: "op_9", in: 1500, wait: 3000, out: 1000, pan: "up" },
+                    { id: "bg_title", in: 1000, wait: Infinity, out: 1500, pan: "contain" } 
                 ];
                 showOpening(openingState.images, "bgm_op", "act2_title");
             }
@@ -691,7 +695,7 @@
             charId: "ch_homura",
             bgm: "stop", 
             text: [
-                "冴島「夕暮れまであと少しだ。ここで張っていれば、犯 বহুমが発振器の回収、あるいは次の仕掛けをしに現れるはずだ。」",
+                "冴島「夕暮れまであと少しだ。ここで張っていれば、犯人が発振器の回収、あるいは次の仕掛けをしに現れるはずだ。」",
                 "ほむら「……やっぱり、ただの実習生じゃなかったんですね。」",
                 "冴島「おっと、ほむら嬢。危ないから帰った方がいいぜ。」",
                 "ほむら「私も図書委員として、本を盗んだ犯人の顔を見ておきたいんです。邪魔はしませんから。」",
@@ -1700,13 +1704,13 @@
                 ctx.strokeRect(win.x, win.y, win.w, win.h);
             }
 
-            // バージョン表示（1.5文字上へ、7文字左へ）
+            // バージョン表示（右へ2文字(32px)、上へ0.5文字(8px)移動）
             if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
                 ctx.fillStyle = "#888";
                 ctx.font = "bold 16px sans-serif";
                 ctx.textAlign = "right";
                 ctx.textBaseline = "middle";
-                ctx.fillText(GAME_VERSION, win.x + win.w - 79, win.y + 33);
+                ctx.fillText(GAME_VERSION, win.x + win.w - 127, win.y + 57);
                 ctx.textBaseline = "alphabetic"; 
             }
 
@@ -1841,14 +1845,6 @@
         if (titleState.active) {
             titleState.timer += dt;
             
-            let jingleEnded = false;
-            if (titleState.jingle && bgmAudios[titleState.jingle]) {
-                const jingleAudio = bgmAudios[titleState.jingle];
-                if (jingleAudio.ended) {
-                    jingleEnded = true;
-                }
-            }
-
             if (titleState.phase === 0) { 
                 titleState.alpha += dt / 1000;
                 if (titleState.alpha >= 1) {

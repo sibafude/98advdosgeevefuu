@@ -86,7 +86,7 @@
     /* =========================================
        ゲームシステム初期設定
        ========================================= */
-    const GAME_VERSION = "Ver 1.0.17"; 
+    const GAME_VERSION = "Ver 1.0.18"; 
 
     const canvas = document.getElementById("game-canvas");
     const ctx = canvas.getContext("2d");
@@ -431,12 +431,12 @@
                     { id: "op_2", in: 100, wait: 400, out: 100, pan: "none" },
                     { id: "op_3", in: 100, wait: 400, out: 100, pan: "none" },
                     { id: "op_4", in: 100, wait: 400, out: 100, pan: "none" },
-                    { id: "op_5", in: 800, wait: 2000, out: 1000, pan: "none" },
-                    { id: "op_6", in: 500, wait: 1500, out: 1000, pan: "none" },
-                    { id: "op_7", in: 50, wait: 100, out: 50, pan: "none" },
-                    { id: "op_8", in: 50, wait: 100, out: 50, pan: "none" },
+                    { id: "op_5", in: 800, wait: 2000, out: 0, pan: "none" }, 
+                    { id: "op_6", in: 1000, wait: 1500, out: 1000, pan: "none" },
+                    { id: "op_7", in: 150, wait: 300, out: 150, pan: "none" },
+                    { id: "op_8", in: 150, wait: 700, out: 150, pan: "none" }, // 少しだけ短く
                     { id: "op_9", in: 1500, wait: 3000, out: 1000, pan: "up" },
-                    { id: "bg_title", in: 1000, wait: Infinity, out: 1500, pan: "contain" } 
+                    { id: "bg_title", in: 2000, wait: Infinity, out: 1500, pan: "contain" } 
                 ];
                 showOpening(openingState.images, "bgm_op", "act2_title");
             }
@@ -1643,6 +1643,16 @@
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
             
             const config = openingState.images[openingState.currentIndex];
+
+            // フェードアウト時間が0の場合、次のフェードイン時に前の画像を背景に描画してクロスフェードにする
+            if (openingState.currentIndex > 0 && openingState.phase === 0) {
+                const prevConfig = openingState.images[openingState.currentIndex - 1];
+                if (prevConfig.out === 0 && imageCache[prevConfig.id] && imageCache[prevConfig.id].complete) {
+                    ctx.globalAlpha = 1.0;
+                    drawBackground(imageCache[prevConfig.id], 0, 0, WIDTH, HEIGHT, prevConfig.pan, 1.0);
+                }
+            }
+
             if (imageCache[config.id] && imageCache[config.id].complete) {
                 ctx.globalAlpha = openingState.alpha;
                 
@@ -1704,13 +1714,12 @@
                 ctx.strokeRect(win.x, win.y, win.w, win.h);
             }
 
-            // バージョン表示（右へ2文字(32px)、上へ0.5文字(8px)移動）
             if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
                 ctx.fillStyle = "#888";
                 ctx.font = "bold 16px sans-serif";
                 ctx.textAlign = "right";
                 ctx.textBaseline = "middle";
-                ctx.fillText(GAME_VERSION, win.x + win.w - 127, win.y + 57);
+                ctx.fillText(GAME_VERSION, win.x + win.w - 159, win.y + 65);
                 ctx.textBaseline = "alphabetic"; 
             }
 
@@ -1896,7 +1905,12 @@
             const isLastImage = openingState.currentIndex === openingState.images.length - 1;
 
             if (openingState.phase === 0) { 
-                openingState.alpha += dt / config.in;
+                if (config.in > 0) {
+                    openingState.alpha += dt / config.in;
+                } else {
+                    openingState.alpha = 1;
+                }
+                
                 if (openingState.alpha >= 1) {
                     openingState.alpha = 1;
                     openingState.phase = 1;
@@ -1913,7 +1927,13 @@
                     }
                 }
             } else if (openingState.phase === 2) { 
-                openingState.alpha -= dt / config.out;
+                const fadeTime = isLastImage ? 2000 : config.out;
+                
+                if (fadeTime > 0) {
+                    openingState.alpha -= dt / fadeTime;
+                } else {
+                    openingState.alpha = 0;
+                }
                 
                 if (isLastImage && openingState.bgmKey && bgmAudios[openingState.bgmKey]) {
                     const audio = bgmAudios[openingState.bgmKey];

@@ -38,7 +38,7 @@
         image-rendering: pixelated;
     }
 
-    /* 開発用：ローカルファイル読み込みUI（最初から表示） */
+    /* 開発用：ローカルファイル読み込み・ジャンプUI */
     #dev-tools {
         display: none; 
         position: absolute;
@@ -59,6 +59,13 @@
         margin-top: 6px;
         margin-bottom: 12px;
     }
+    #dev-tools select {
+        color: #000;
+        font-size: 14px;
+        margin-top: 6px;
+        margin-bottom: 6px;
+        padding: 2px;
+    }
     #dev-tools button {
         background-color: #444;
         color: #fff;
@@ -73,10 +80,37 @@
 <div id="game-wrapper">
     <!-- 開発用UI -->
     <div id="dev-tools">
-        <span>🔧 <b>[読込]</b> 画像や音楽のテスト差し替え（assetsフォルダ優先）</span><br>
+        <span>🔧 <b>[読込]</b> 画像や音楽のテスト差し替え</span><br>
         🖼 画像: <input type="file" id="local-img-upload" accept="image/*" multiple><br>
         🎵 音楽: <input type="file" id="local-audio-upload" accept="audio/*, .mp3, .wav, .m4a, .aac, .ogg" multiple><br>
-        <button onclick="document.getElementById('dev-tools').style.display='none'">閉じる</button>
+        <hr style="border-color:#555; margin: 5px 0;">
+        <span>🚀 <b>[シーンジャンプ]</b></span><br>
+        <select id="dev-scene-select">
+            <option value="tap_to_start">タイトル画面</option>
+            <option value="start">ACT 1: 本編開始</option>
+            <option value="goto_clocktower">ACT 1: 時計塔</option>
+            <option value="confrontation">ACT 1: 犯人対峙</option>
+            <option value="act1_end_title">ACT 1: END</option>
+            <option value="intermission_title">OPムービー</option>
+            <option value="act2_title">ACT 2: 依頼</option>
+            <option value="act2_start">ACT 2: 放課後</option>
+            <option value="goto_shiori_house">ACT 2: 栞の家</option>
+            <option value="act2_office_message">ACT 2: 留守電</option>
+            <option value="review2_q1">ACT 2: 夜の整理</option>
+            <option value="act2_end_title">ACT 2: END</option>
+            <option value="act3_title">ACT 3: 留守番</option>
+            <option value="act3_school">ACT 3: 学校</option>
+            <option value="act3_client_house_ext">ACT 3: 林の家(外観)</option>
+            <option value="act3_client_house_in">ACT 3: 林の家(応接室)</option>
+            <option value="act3_alone">ACT 3: 一人の留守番</option>
+            <option value="act3_garden">ACT 3: 庭の捜索</option>
+            <option value="act3_back_to_room">ACT 3: ほむらの理由</option>
+            <option value="act3_noise_2f">ACT 3: 2階の物音</option>
+            <option value="act3_room2f_dark">ACT 3: 2階の探索</option>
+        </select>
+        <button onclick="jumpToScene()">ジャンプ</button>
+        <hr style="border-color:#555; margin: 5px 0;">
+        <button onclick="document.getElementById('dev-tools').style.display='none'" style="width:100%; margin-top:5px;">閉じる</button>
     </div>
     
     <canvas id="game-canvas" width="720" height="1280"></canvas>
@@ -86,7 +120,7 @@
     /* =========================================
        ゲームシステム初期設定
        ========================================= */
-    const GAME_VERSION = "Ver 1.0.18"; 
+    const GAME_VERSION = "Ver 1.1.6"; 
 
     const canvas = document.getElementById("game-canvas");
     const ctx = canvas.getContext("2d");
@@ -124,16 +158,27 @@
         "bg_warehouse_night": "https://placehold.co/720x1280/1a1a2e/FFF?text=Background:\\nWarehouse+(Night)",
         "bg_bar": "https://placehold.co/720x1280/1a1010/FFF?text=Background:\\nNight+Bar", 
         "bg_shiori_house": "https://placehold.co/720x1280/4a3b32/FFF?text=Background:\\nShiori's+House", 
+        "bg_house_ext": "https://placehold.co/720x1280/5b6f82/FFF?text=Background:\\nHouse+Exterior",
+        "bg_simple_living": "https://placehold.co/720x1280/dcdcdc/000?text=Background:\\nSimple+Living+Room",
+        "bg_garden_sunset": "https://placehold.co/720x1280/4a5b42/FFF?text=Background:\\nGarden+(Sunset)",
+        "bg_room2f_dark": "https://placehold.co/720x1280/111/FFF?text=Background:\\n2F+Room+(Dark)",
+        "bg_room2f_light": "https://placehold.co/720x1280/ccc/000?text=Background:\\n2F+Room+(Light)",
+        "bg_room2f_searched": "https://placehold.co/720x1280/ccc/000?text=Background:\\n2F+Room+(Searched)",
         "ev_kidnap": "https://placehold.co/720x1280/0d1117/FFF?text=Event+CG:\\nKidnapping+(720x1280)",
         "ev_rescue": "https://placehold.co/720x1280/2d0815/FFF?text=Event+CG:\\nRescue+Homura+and+Shiori",
         "ev_medal": "https://placehold.co/720x1280/111/FFF?text=Event+CG:\\nMedal+Photo", 
         "ch_homura": "https://placehold.co/400x800/e88/FFF?text=Character:\\nHomura+(400x800)",
+        "ch_homura_jersey": "https://placehold.co/400x800/d44/FFF?text=Character:\\nHomura+(Jersey)",
+        "ch_homura_jersey_glasses": "https://placehold.co/400x800/d44/000?text=Character:\\nHomura+(Jersey+%26+Glasses)", 
         "ch_yui": "https://placehold.co/400x800/85a/FFF?text=Character:\\nYui+Tachibana",
+        "ch_yui_jersey": "https://placehold.co/400x800/85a/FFF?text=Character:\\nYui+(Jersey)",
+        "ch_yui_jersey_glasses": "https://placehold.co/400x800/85a/000?text=Character:\\nYui+(Jersey+%26+Glasses)",
         "ch_kenta": "https://placehold.co/400x800/585/FFF?text=Character:\\nKenta+Morishita",
         "ch_principal": "https://placehold.co/400x800/444/FFF?text=Character:\\nPrincipal+(Elder+Woman)", 
         "ch_shiori": "https://placehold.co/400x800/4a8/FFF?text=Character:\\nShiori",
         "ch_informant": "https://placehold.co/400x800/345/FFF?text=Character:\\nInformant",
         "ch_father": "https://placehold.co/400x800/333/FFF?text=Character:\\nFather+(Diplomat)", 
+        "ch_hayashi": "https://placehold.co/400x800/aa8/000?text=Character:\\nHayashi+(Client)", 
         "ui_panel": "https://placehold.co/720x280/000028/FFF?text=UI+Panel"
     };
 
@@ -158,7 +203,7 @@
     let defaultBgmInterval = null;
     let currentNote = 0;
 
-    const bgmKeys = ["bgm", "bgm_tension", "bgm_night", "jingle", "bgm_op", "bgm_title"];
+    const bgmKeys = ["bgm", "bgm_tension", "bgm_night", "jingle", "bgm_op", "bgm_title", "bgm_search"];
     const bgmAudios = {};
 
     bgmKeys.forEach(key => {
@@ -364,6 +409,24 @@
         }
     }
 
+    // --- シーン間トランジション（黒フェード）演出 ---
+    let transitionState = {
+        active: false,
+        phase: 0,
+        alpha: 0,
+        timer: 0,
+        nextScene: ""
+    };
+
+    function doFadeTransition(nextSceneId) {
+        transitionState.active = true;
+        transitionState.phase = 0;
+        transitionState.alpha = 0;
+        transitionState.timer = 0;
+        transitionState.nextScene = nextSceneId;
+        state.uiVisible = false; 
+    }
+
     // --- ゲームステータス ---
     let state = {
         sceneId: "tap_to_start",
@@ -417,6 +480,7 @@
         },
         "act1_end_commands": {
             bgId: "bg_warehouse_night",
+            bgm: "stop",
             text: [],
             commands: [
                 { label: "次へ", target: "intermission_title" },
@@ -434,9 +498,9 @@
                     { id: "op_5", in: 800, wait: 2000, out: 0, pan: "none" }, 
                     { id: "op_6", in: 1000, wait: 1500, out: 1000, pan: "none" },
                     { id: "op_7", in: 150, wait: 300, out: 150, pan: "none" },
-                    { id: "op_8", in: 150, wait: 700, out: 150, pan: "none" }, // 少しだけ短く
-                    { id: "op_9", in: 1500, wait: 3000, out: 1000, pan: "up" },
-                    { id: "bg_title", in: 2000, wait: Infinity, out: 1500, pan: "contain" } 
+                    { id: "op_8", in: 150, wait: 700, out: 150, pan: "none" }, 
+                    { id: "op_9", in: 1500, wait: 3000, out: 500, pan: "up" },
+                    { id: "bg_title", in: 1000, wait: Infinity, out: 1500, pan: "contain" } 
                 ];
                 showOpening(openingState.images, "bgm_op", "act2_title");
             }
@@ -490,9 +554,9 @@
             bgId: "bg_library",
             text: [],
             commands: [
-                { label: "本棚を調べる", target: "library_bookshelf" },
-                { label: "窓際を調べる", target: "library_window" },
-                { label: "時計塔へ", target: "goto_clocktower" },
+                { label: "本棚を調べる", target: "library_bookshelf", condition: () => true },
+                { label: "窓際を調べる", target: "library_window", condition: () => true },
+                { label: "時計塔へ", target: "goto_clocktower", condition: () => true },
                 { 
                     label: "推理する", 
                     target: "deduction", 
@@ -613,9 +677,9 @@
             bgId: "bg_clocktower",
             text: [],
             commands: [
-                { label: "用務員に話を聞く", target: "talk_kenta" },
-                { label: "扉を調べる", target: "clocktower_door" },
-                { label: "図書室へ", target: "library_commands" },
+                { label: "用務員に話を聞く", target: "talk_kenta", condition: () => true },
+                { label: "扉を調べる", target: "clocktower_door", condition: () => true },
+                { label: "図書室へ", target: "library_commands", condition: () => true },
                 { 
                     label: "推理する", 
                     target: "deduction", 
@@ -814,6 +878,7 @@
         },
         "office_warehouse": {
             bgId: "bg_warehouse", 
+            bgm: "bgm",
             text: [
                 "冴島「ここが俺の城、冴島探偵事務所だ。見ての通り、古い港の倉庫を間借りして使ってる。」",
                 "冴島「隙間風は酷いが、誰の目にもつかないし、機材を置くには十分な広さでね。」",
@@ -846,7 +911,7 @@
                 "冴島（眼鏡をかけた、大人しそうな子だな。ほむら嬢とは正反対のタイプに見えるが……）",
                 "ほむら「栞は真面目で成績優秀なんです。でも最近、様子がおかしくて……私が無理やり連れてきました。」",
                 "冴島「なるほど。で、命が狙われているってのはどういうことだ？」",
-                "栞「……私の父は、とある国の外交官です。実は、この聖蘭学園はその国の高校と姉妹校でして……」",
+                "栞「……私の父は、外交官です。実は、この聖蘭学園はその国の高校と姉妹校でして……」",
                 "栞「父の仕事の詳しい内容は私にはわからないのですが、最近すごくピリピリしていて……」",
                 "栞「数日前から、登下校の際に黒い車や、見知らぬ男たちに後をつけられている気がするんです。」",
                 "栞「もしかしたら、父の仕事関係で誰かに狙われているのではないかと……。」"
@@ -1163,7 +1228,7 @@
         "review_clear": {
             bgId: "bg_warehouse_night",
             text: [
-                "冴島「そうだ、外務省の外交官だ。」",
+                "冴島「そうだ、外交官だ。」",
                 "冴島「古書の盗難事件と、外交官の娘を狙った誘拐事件……。」",
                 "冴島「橘先生がワカナディアに関する本を盗んだ理由と、栞嬢が持っていた奇妙なメダル……。」",
                 "冴島「一見無関係に見える事件だが、この学園という舞台で奇妙に交錯している。」",
@@ -1190,12 +1255,27 @@
         "goto_shiori_house": {
             bgId: "bg_shiori_house",
             bgm: "bgm",
+            text: [
+                "【 栞宅 】",
+                "冴島（ここが水無月邸か。外交官の家だけあって、かなり立派な洋館だな。）"
+            ],
+            nextScene: "call_father"
+        },
+        "call_father": {
+            bgId: "bg_shiori_house",
+            charId: "ch_shiori",
+            text: [
+                "栞「お父様、冴島先生をお連れしました。」",
+                "栞の案内に従って応接室に通されると、そこにはいかにも外交官らしい、お堅そうな紳士が座っていた。"
+            ],
+            nextScene: "father_talk_start"
+        },
+        "father_talk_start": {
+            bgId: "bg_shiori_house",
             charId: "ch_father",
             text: [
-                "冴島（ここが水無月邸か。外交官の家だけあって、かなり立派な洋館だな。）",
-                "応接室に通されると、そこにはいかにも外交官らしい、お堅そうな紳士が座っていた。",
-                "水無月「君が冴島くんか。娘を助けてくれたそうだな、礼を言う。私が栞の父だ。」",
-                "冴島「歴史の実習生をやっている冴島です。それで、俺を呼んだ用件というのは？」"
+                "水無月「あなたが冴島さんですね。娘を助けてくれたそうだな、礼を言う。私が栞の父だ。」",
+                "冴島「探偵の冴島です。それで、俺を呼んだ用件というのは？」"
             ],
             onLoad: () => {
                 state.flags.askedReason = false;
@@ -1209,9 +1289,9 @@
             charId: "ch_father",
             text: [],
             commands: [
-                { label: "狙われた理由", target: "father_ask_reason", condition: () => !state.flags.askedReason },
-                { label: "父親の仕事", target: "father_ask_job", condition: () => !state.flags.askedJob },
-                { label: "母親とメダル", target: "father_ask_mother", condition: () => !state.flags.askedMother },
+                { label: "狙われた理由", target: "father_ask_reason", condition: () => true },
+                { label: "父親の仕事", target: "father_ask_job", condition: () => true },
+                { label: "母親とメダル", target: "father_ask_mother", condition: () => true },
                 { label: "話を終える", target: "father_agreement", condition: () => state.flags.askedReason && state.flags.askedJob && state.flags.askedMother }
             ]
         },
@@ -1219,7 +1299,7 @@
             bgId: "bg_shiori_house",
             charId: "ch_father",
             text: [
-                "冴島「単刀直入に聞きます。なぜ栞嬢は狙われているんです？ 心当たりは？」",
+                "冴島「単刀直入に聞きます。なぜ栞さんは狙われているんです？ 心当たりは？」",
                 "水無月「……さあな。ただの身代金目当ての誘拐犯ではないかと思っているが。」",
                 "冴島（目を逸らしたな。明らかに何かを隠しているぜ。）"
             ],
@@ -1230,9 +1310,9 @@
             bgId: "bg_shiori_house",
             charId: "ch_father",
             text: [
-                "冴島「あんたの仕事……条約の交渉が関係しているんじゃないのか？」",
-                "水無月「私の仕事は国家間の機密事項だ。一介の実習生……いや、探偵気取りに話すことなど何もない。」",
-                "水無月「君にはただ、学校内での娘の安全を守ってもらえればそれでいいんだ。」"
+                "冴島「あなたの仕事……条約の交渉が関係しているんじゃないのか？」",
+                "水無月「私の仕事は国家間の機密事項だ。探偵のあなたに話すことなど何もない。」",
+                "水無月「あなたにはただ、学校内での娘の安全を守ってもらえればそれでいいんだ。」"
             ],
             onLoad: () => { state.flags.askedJob = true; },
             nextScene: "father_talk_commands"
@@ -1241,9 +1321,9 @@
             bgId: "bg_shiori_house",
             charId: "ch_father",
             text: [
-                "冴島「栞嬢が持っていたメダル……亡くなった奥さんの母国のものだそうだな。砂漠の国『ワカナディア』の。」",
+                "冴島「栞さんが持っていたメダル……亡くなった奥さんの母国のものだそうだな。砂漠の国『ワカナディア』の。」",
                 "水無月「……っ！？ なぜそれを……。栞が話したのか。」",
-                "冴島「あんたが外交官を務める国でもある。あの奇妙な紋章のメダル……ただの形見じゃないんだろう？」",
+                "冴島「あなたが外交官を務める国でもある。あの奇妙な紋章のメダル……ただの形見じゃないんだろう？」",
                 "水無月「……妻の祖国は現在、内乱と軍事政権の台頭で情勢が非常に不安定でね。だが、今回の件とは無関係だ。これ以上詮索しないでくれ。」",
                 "冴島（動揺していた。確実にあのメダルとワカナディアが、事件の鍵だな。）"
             ],
@@ -1254,28 +1334,779 @@
             bgId: "bg_shiori_house",
             charId: "ch_father",
             text: [
-                "冴島「……わかった。あんたが何を隠していようと、俺は依頼通り栞嬢を守るだけだ。」",
+                "冴島「……わかった。あなたが何を隠していようと、俺は依頼通り栞さんを守るだけだ。」",
                 "水無月「頼んだぞ。報酬は十分に支払おう。」",
                 "冴島（肝心なことは何も言わなかったが、収穫はあった。中東の小国、軍事政権、そしてメダル……深い裏がありそうだぜ。）"
             ],
-            nextScene: "act2_tobecontinued"
+            nextScene: "leave_shiori_house"
         },
-        "act2_tobecontinued": {
+        "leave_shiori_house": {
             bgId: "bg_shiori_house",
+            charId: "ch_shiori",
+            text: [
+                "冴島「それじゃあ、今日はこれで失礼する。また明日、学校でな。」",
+                "栞「はい。冴島先生、お気をつけて。」",
+                "俺は水無月邸を後にし、1人で事務所へと戻ることにした。"
+            ],
+            nextScene: "act2_office_message"
+        },
+        "act2_office_message": {
+            bgId: "bg_warehouse_night",
+            bgm: "bgm_night",
+            text: [
+                "……外交官の父親か。食えないタヌキだったな。",
+                "冴島「ん？ 留守電が入ってるな。珍しい。」",
+                "留守電『あー、もしもし？ 冴島探偵事務所さんですかね？ 私、林という者ですが……』",
+                "留守電『明日の夕方、ちょっとお願いしたい仕事がありまして。直接お家に来てほしいんですがねぇ……。』",
+                "冴島「留守番電話での依頼か。まあ、実習の合間に稼げるなら悪くない。」",
+                "冴島「さて、明日に備えて今日の出来事と情報を整理しておくか。」"
+            ],
+            nextScene: "review2_q1"
+        },
+        "review2_q1": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「まず、誘拐犯が落とした写真に写っていて、栞さんが隠し持っていたものは？」"
+            ],
+            nextScene: "review2_q1_commands"
+        },
+        "review2_q1_commands": {
+            bgId: "bg_warehouse_night",
+            text: [],
+            commands: [
+                { label: "学園の合鍵", target: "review2_q1_wrong" },
+                { label: "母親のメダル", target: "review2_q2" },
+                { label: "隠し財産の地図", target: "review2_q1_wrong" }
+            ]
+        },
+        "review2_q1_wrong": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「いや、違うな。現場に落ちていた写真に写っていたものだ。」"
+            ],
+            nextScene: "review2_q1_commands"
+        },
+        "review2_q2": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「ああ、母親の形見だという奇妙なメダルだ。」",
+                "冴島「次に、そのメダルの由来であり、父親が外交官として関わっている中東の国は？」"
+            ],
+            nextScene: "review2_q2_commands"
+        },
+        "review2_q2_commands": {
+            bgId: "bg_warehouse_night",
+            text: [],
+            commands: [
+                { label: "ワカナディア", target: "review2_q3" },
+                { label: "アトランティス", target: "review2_q2_wrong" },
+                { label: "エルドラド", target: "review2_q2_wrong" }
+            ]
+        },
+        "review2_q2_wrong": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「違うな。国土のほとんどが砂漠だという、あの小さな国だ。」"
+            ],
+            nextScene: "review2_q2_commands"
+        },
+        "review2_q3": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「そうだ、ワカナディアだ。」",
+                "冴島「そして最後に、事務所の留守電に入っていた林からの依頼内容は？」"
+            ],
+            nextScene: "review2_q3_commands"
+        },
+        "review2_q3_commands": {
+            bgId: "bg_warehouse_night",
+            text: [],
+            commands: [
+                { label: "浮気調査", target: "review2_q3_wrong" },
+                { label: "人探し", target: "review2_q3_wrong" },
+                { label: "明日の夕方に家へ来てほしい", target: "review2_clear" }
+            ]
+        },
+        "review2_q3_wrong": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「違うな。中年男の声で、具体的な日時を指定されていたはずだ。」"
+            ],
+            nextScene: "review2_q3_commands"
+        },
+        "review2_clear": {
+            bgId: "bg_warehouse_night",
+            text: [
+                "冴島「そうだ。留守電での依頼、か。」",
+                "冴島「誘拐事件の背後には、ワカナディアとメダルが深く関わっている……。」",
+                "冴島「よし、大体の状況は整理できた。明日以降も気を引き締めていこう。」",
+                "冴島「今日はもう寝るか。」"
+            ],
+            nextScene: "act2_end_title"
+        },
+        "act2_end_title": {
+            onLoad: () => {
+                showTitle("ACT 2", "END", "act2_end_commands", "jingle");
+            }
+        },
+        "act2_end_commands": {
+            bgId: "bg_warehouse_night",
+            bgm: "stop",
+            text: [],
+            commands: [
+                { label: "次へ", target: "act3_title" },
+                { label: "セーブ", action: "open_save" },
+                { label: "ロード", action: "open_load" }
+            ]
+        },
+        "act3_title": {
+            onLoad: () => {
+                showTitle("ACT 3", "留守番", "act3_school", "jingle");
+            }
+        },
+        "act3_school": {
+            bgId: "bg_classroom",
+            bgm: "bgm",
+            charId: "ch_homura",
+            text: [
+                "翌日。学校の教室にて。",
+                "ほむら「冴島先生！ 昨日は栞の家に行ってどうでした？」",
+                "冴島「ああ。お堅い親父さんでね、正式に護衛を頼まれたよ。ただ、何か隠し事をしてるようだったがな。」",
+                "ほむら「やっぱり……！ 私も手伝います！」",
+                "冴島「いや、お嬢ちゃんは引っ込んでな。それより、今日の放課後は別の依頼が入ってるから、早めに失礼するぜ。」",
+                "ほむら「別の依頼？ 探偵の仕事ですか！？ どんな事件なんですか、私も行きます！」",
+                "冴島「ダメだ。栞さんの件とは全く関係ないし、遊びじゃないんだ。大人しく帰って宿題でもしてな。」",
+                "ほむら「むぅ……ケチ。」"
+            ],
+            nextScene: "act3_school_to_house"
+        },
+        "act3_school_to_house": {
+            bgId: "bg_classroom",
+            onLoad: () => {
+                doFadeTransition("act3_client_house_ext");
+            }
+        },
+        "act3_client_house_ext": {
+            bgId: "bg_house_ext",
+            bgm: "stop",
+            text: [
+                "放課後、指定された閑静な住宅街へやってきた。",
+                "冴島「指定された住所は……ここだな。」"
+            ],
+            onLoad: () => {
+                state.flags.checkedAct3ExtSurround = false;
+                state.flags.checkedAct3ExtHouse = false;
+            },
+            nextScene: "act3_client_house_ext_commands"
+        },
+        "act3_client_house_ext_commands": {
+            bgId: "bg_house_ext",
+            text: [],
+            commands: [
+                { label: "周囲を見る", target: "act3_ext_look_around", condition: () => true },
+                { label: "家を見る", target: "act3_ext_look_house", condition: () => true },
+                { label: "インターホンを押す", target: "act3_ring_intercom", condition: () => state.flags.checkedAct3ExtSurround && state.flags.checkedAct3ExtHouse }
+            ]
+        },
+        "act3_ext_look_around": {
+            bgId: "bg_house_ext",
+            text: [
+                "冴島「人通りも少なく、静かな高級住宅街だな。空き巣に狙われやすそうだ。」"
+            ],
+            onLoad: () => { state.flags.checkedAct3ExtSurround = true; },
+            nextScene: "act3_client_house_ext_commands"
+        },
+        "act3_ext_look_house": {
+            bgId: "bg_house_ext",
+            text: [
+                "冴島「ごく一般的な2階建ての一戸建てだ。特に変わった様子はないな。」"
+            ],
+            onLoad: () => { state.flags.checkedAct3ExtHouse = true; },
+            nextScene: "act3_client_house_ext_commands"
+        },
+        "act3_ring_intercom": {
+            bgId: "bg_house_ext",
+            text: [
+                "俺は玄関のインターホンを押した。",
+                "インターホン『はぁーい。どちら様で？』",
+                "冴島「冴島探偵事務所の者です。昨晩、留守電に依頼をいただいた件で伺いました。」",
+                "インターホン『おお、探偵さん！ お待ちしてましたよ。今開けますから、入ってくださいな。』"
+            ],
+            nextScene: "act3_client_house_in"
+        },
+        "act3_client_house_in": {
+            bgId: "bg_simple_living",
+            bgm: "bgm",
+            charId: "ch_hayashi",
+            text: [
+                "冴島「お邪魔します。」",
+                "出迎えたのは、小太りで少しとぼけた雰囲気の中年男だった。",
+                "林「どうもどうも、林です。狭い所ですが、適当に座ってくださいな。」"
+            ],
+            onLoad: () => {
+                state.flags.checkedAct3InHayashi = false;
+                state.flags.checkedAct3InRoom = false;
+                state.flags.checkedAct3InPush = false;
+            },
+            nextScene: "act3_client_house_in_commands"
+        },
+        "act3_client_house_in_commands": {
+            bgId: "bg_simple_living",
+            charId: "ch_hayashi",
+            text: [],
+            commands: [
+                { label: "林を見る", target: "act3_in_look_hayashi", condition: () => true },
+                { label: "部屋を見る", target: "act3_in_look_room", condition: () => true },
+                { label: "林を横へずらす", target: "act3_in_push_hayashi", condition: () => true },
+                { label: "依頼を聞く", target: "act3_hear_request", condition: () => state.flags.checkedAct3InHayashi && state.flags.checkedAct3InRoom && state.flags.checkedAct3InPush }
+            ]
+        },
+        "act3_in_look_hayashi": {
+            bgId: "bg_simple_living",
+            charId: "ch_hayashi",
+            text: [
+                "冴島（日本人の名前を名乗っていたが、どこか彫りが深く、少し外国人っぽい顔立ちをしているな。）"
+            ],
+            onLoad: () => { state.flags.checkedAct3InHayashi = true; },
+            nextScene: "act3_client_house_in_commands"
+        },
+        "act3_in_look_room": {
+            bgId: "bg_simple_living",
+            charId: "ch_hayashi",
+            text: [
+                "冴島「部屋の様子を……って、このおっさんが邪魔でよく見えねえな。」",
+                "林「え？ 何か言いましたか？」",
+                "冴島「いえ、立派な部屋だなと。」"
+            ],
+            onLoad: () => { state.flags.checkedAct3InRoom = true; },
+            nextScene: "act3_client_house_in_commands"
+        },
+        "act3_in_push_hayashi": {
+            bgId: "bg_simple_living",
+            charId: "ch_hayashi",
+            text: [
+                "冴島「よいしょっと。」",
+                "林「わわっ！？ あ、あなた何をしてるんですか！ 急に人を押さないでくださいよ！」",
+                "冴島「いや、ちょっと部屋の風通しを良くしようかと。」",
+                "林「はあ……？ 変わった探偵さんですねぇ。」"
+            ],
+            onLoad: () => { state.flags.checkedAct3InPush = true; },
+            nextScene: "act3_client_house_in_commands"
+        },
+        "act3_hear_request": {
+            bgId: "bg_simple_living",
+            charId: "ch_hayashi",
+            text: [
+                "冴島「それで、依頼というのは？」",
+                "林「実はですね、私、今から明日の朝まで急な用事で出かけなきゃならないんですよ。」",
+                "林「それで、探偵さんに『留守番』をお願いしたいんです。」",
+                "冴島「……留守番？ 探偵に頼むようなことですか？ 家事代行や便利屋の仕事では？」",
+                "林「いやぁ、実は以前、私が留守の間に泥棒に入られましてねぇ。普通の便利屋じゃ用心棒にはならないでしょう？ だから探偵さんにお願いしたくて。」",
+                "冴島「なるほど、防犯を兼ねた留守番というわけですか。いいでしょう、引き受けますよ。」",
+                "林「助かります！ 冷蔵庫の中の食べ物は勝手に食べていいですし、お風呂も使って構いませんよ。」",
+                "林「あ、ただし……『2階には絶対に上がらないでください』ね。私のプライベートなものばかりでして。」"
+            ],
+            nextScene: "act3_alone"
+        },
+        "act3_alone": {
+            bgId: "bg_simple_living",
+            text: [
+                "冴島「2階には上がるな、か。了解しました。明日の朝までですね。」",
+                "林「ええ、それじゃあ、よろしくお願いしますよ。戸締まりはしっかり頼みますね。」",
+                "慌ただしく準備を済ませると、林は家を出ていった。",
+                "冴島「さて、一晩の留守番か。簡単な仕事で助かるが……『2階には上がるな』ねぇ。」",
+                "冴島「探偵にそんなことを言えば、逆に怪しんで調べたくなるってことが分かってないらしい。」"
+            ],
+            onLoad: () => {
+                state.flags.checkedAct3AloneRoom = false;
+                state.flags.checkedAct3AloneCrafts = false;
+            },
+            nextScene: "act3_alone_commands"
+        },
+        "act3_alone_commands": {
+            bgId: "bg_simple_living",
+            text: [],
+            commands: [
+                { label: "部屋を見る", target: "act3_alone_look_room", condition: () => true },
+                { label: "壁際の民芸品を見る", target: "act3_alone_look_crafts", condition: () => true },
+                { label: "冷蔵庫を物色する", target: "act3_alone_fridge", condition: () => state.flags.checkedAct3AloneRoom && state.flags.checkedAct3AloneCrafts }
+            ]
+        },
+        "act3_alone_look_room": {
+            bgId: "bg_simple_living",
+            text: [
+                "冴島「それほど豪華なわけではないが、綺麗に片付いている一般的なリビングだな。」"
+            ],
+            onLoad: () => { state.flags.checkedAct3AloneRoom = true; },
+            nextScene: "act3_alone_commands"
+        },
+        "act3_alone_look_crafts": {
+            bgId: "bg_simple_living",
+            text: [
+                "冴島「壁際には世界各地の民芸品が飾られているな。」",
+                "冴島「ん？ これは……水無月邸にあったような、中東風の織物もあるな。林の趣味だろうか？」"
+            ],
+            onLoad: () => { state.flags.checkedAct3AloneCrafts = true; },
+            nextScene: "act3_alone_commands"
+        },
+        "act3_alone_fridge": {
+            bgId: "bg_simple_living",
+            text: [
+                "冴島「まあいい。まずは言われた通り、冷蔵庫の中身でも確認させてもらうとするか……ん？」",
+                "ガタッ……！",
+                "冴島「今、庭のほうで物音がしたな……泥棒か？ 外に出てみるか。」"
+            ],
+            nextScene: "act3_garden"
+        },
+        "act3_garden": {
+            bgId: "bg_garden_sunset",
+            bgm: "bgm_search",
+            text: [
+                "冴島「庭に出たが……夕暮れで薄暗いな。どこかに隠れているはずだ。」"
+            ],
+            onLoad: () => {
+                state.flags.checkedGardenWindow = false;
+                state.flags.checkedGardenGround = false;
+            },
+            nextScene: "act3_garden_commands"
+        },
+        "act3_garden_commands": {
+            bgId: "bg_garden_sunset",
+            text: [],
+            commands: [
+                { label: "窓を調べる", target: "act3_garden_window", condition: () => true },
+                { label: "地面を調べる", target: "act3_garden_ground", condition: () => true },
+                { label: "茂みを調べる", target: "act3_catch_intruder", condition: () => state.flags.checkedGardenWindow && state.flags.checkedGardenGround }
+            ]
+        },
+        "act3_garden_window": {
+            bgId: "bg_garden_sunset",
+            text: [
+                "冴島「窓に鍵はかかっている。こじ開けようとした形跡はない。」"
+            ],
+            onLoad: () => { state.flags.checkedGardenWindow = true; },
+            nextScene: "act3_garden_commands"
+        },
+        "act3_garden_ground": {
+            bgId: "bg_garden_sunset",
+            text: [
+                "冴島「……芝生の上に、小さな足跡がある。林のものじゃないな。」"
+            ],
+            onLoad: () => { state.flags.checkedGardenGround = true; },
+            nextScene: "act3_garden_commands"
+        },
+        "act3_catch_intruder": {
+            bgId: "bg_garden_sunset",
+            charId: "ch_homura_jersey_glasses",
+            text: [
+                "冴島「あそこの茂み……かすかに揺れているな。」",
+                "冴島「そこまでだ。大人しく出てきな。」",
+                "ガサガサッ！",
+                "？？？「ひっ……！？ み、見つかってしまった……！」",
+                "冴島「お前は……」",
+                "冴島（牛乳瓶の底みたいな分厚いメガネに、ジャージ姿……だが、間違いなくうちの図書委員のお嬢ちゃんだな。）"
+            ],
+            onLoad: () => {
+                state.flags.checkedHomuraName = false;
+                state.flags.checkedHomuraPurpose = false;
+            },
+            nextScene: "act3_interrogate_commands"
+        },
+        "act3_interrogate_commands": {
+            bgId: "bg_garden_sunset",
+            charId: "ch_homura_jersey_glasses",
+            text: [],
+            commands: [
+                { label: "名前を聞く", target: "act3_interrogate_name", condition: () => true },
+                { label: "目的を聞く", target: "act3_interrogate_purpose", condition: () => true },
+                { label: "メガネを外すように言う", target: "act3_interrogate_glasses", condition: () => state.flags.checkedHomuraName && state.flags.checkedHomuraPurpose }
+            ]
+        },
+        "act3_interrogate_name": {
+            bgId: "bg_garden_sunset",
+            charId: "ch_homura_jersey_glasses",
+            text: [
+                "冴島「お前、名前は？」",
+                "？？？「わ、私は通りすがりの……通りすがりの名探偵助手、アルセーヌ・ホム・ルパンです！」",
+                "冴島「（ホムって言っちゃってるじゃねえか……）」"
+            ],
+            onLoad: () => { state.flags.checkedHomuraName = true; },
+            nextScene: "act3_interrogate_commands"
+        },
+        "act3_interrogate_purpose": {
+            bgId: "bg_garden_sunset",
+            charId: "ch_homura_jersey_glasses",
+            text: [
+                "冴島「ここで何をしてる？」",
+                "？？？「夜のパトロールです！ この街の平和を守るために！」",
+                "冴島「こんな他人の家の庭でか？ 不法侵入だぞ。」",
+                "？？？「うっ……そ、それは……」"
+            ],
+            onLoad: () => { state.flags.checkedHomuraPurpose = true; },
+            nextScene: "act3_interrogate_commands"
+        },
+        "act3_interrogate_glasses": {
+            bgId: "bg_garden_sunset",
+            charId: "ch_homura_jersey",
+            text: [
+                "冴島「そのふざけたメガネ、前見えてるのか？ 外しな。」",
+                "？？？「だ、だめです！ これは私の本体と言っても過言ではなくて……あっ！」",
+                "俺は素早くメガネを奪い取った。",
+                "ほむら「ああっ、私の変装が！」",
+                "冴島「最初からバレバレだ、ほむら嬢。」",
+                "ほむら「……バレてましたか。完璧な変装だと思ったんですけど。」",
+                "冴島「呆れたお嬢ちゃんだ。とりあえず、近所に怪しまれる前に中に入るぞ。」"
+            ],
+            nextScene: "act3_back_to_room"
+        },
+        "act3_back_to_room": {
+            bgId: "bg_simple_living",
+            bgm: "bgm",
+            charId: "ch_homura_jersey",
+            text: [
+                "冴島「さて……改めて聞くが、なんでこんな所にいるんだ？」"
+            ],
+            onLoad: () => {
+                state.flags.checkedRoomJersey = false;
+                state.flags.checkedRoomShiori = false;
+                state.flags.checkedRoomReason = false;
+            },
+            nextScene: "act3_homura_room_commands"
+        },
+        "act3_homura_room_commands": {
+            bgId: "bg_simple_living",
+            charId: "ch_homura_jersey",
+            text: [],
+            commands: [
+                { label: "ジャージを見る", target: "act3_room_jersey", condition: () => true },
+                { label: "栞の護衛について", target: "act3_room_shiori", condition: () => true },
+                { label: "尾行の理由", target: "act3_room_reason", condition: () => true },
+                { label: "話を打ち切る", target: "act3_noise_2f", condition: () => state.flags.checkedRoomJersey && state.flags.checkedRoomShiori && state.flags.checkedRoomReason }
+            ]
+        },
+        "act3_room_jersey": {
+            bgId: "bg_simple_living",
+            charId: "ch_homura_jersey",
+            text: [
+                "冴島「なぜか上下とも、学校指定の芋くさいジャージを着ている……。」",
+                "冴島「その格好はなんだ？」",
+                "ほむら「夜の潜入捜査には、動きやすくて目立たないジャージが最適だと思いまして。」",
+                "冴島「（目立ちまくりだろ……）」"
+            ],
+            onLoad: () => { state.flags.checkedRoomJersey = true; },
+            nextScene: "act3_homura_room_commands"
+        },
+        "act3_room_shiori": {
+            bgId: "bg_simple_living",
+            charId: "ch_homura_jersey",
+            text: [
+                "冴島「栞さんの護衛はどうした？」",
+                "ほむら「今日は早く寝るって言ってましたから大丈夫です！ 戸締まりもバッチリ確認してきました。」"
+            ],
+            onLoad: () => { state.flags.checkedRoomShiori = true; },
+            nextScene: "act3_homura_room_commands"
+        },
+        "act3_room_reason": {
+            bgId: "bg_simple_living",
+            charId: "ch_homura_jersey",
+            text: [
+                "冴島「で、俺の尾行をしてた理由は？」",
+                "ほむら「気になったので後をつけてきました。探偵の助手として当然の行動です。それに、先生１人じゃ心配ですし。」",
+                "冴島「……はぁ。足手まといが増えただけだぜ。」"
+            ],
+            onLoad: () => { state.flags.checkedRoomReason = true; },
+            nextScene: "act3_homura_room_commands"
+        },
+        "act3_noise_2f": {
+            bgId: "bg_simple_living",
+            bgm: "bgm_tension",
+            charId: "ch_homura_jersey",
+            text: [
+                "冴島「やれやれ。お前もそろそろ……」",
+                "ガタンッ！",
+                "その時、頭上――２階から何かが落ちるような大きな物音がした。",
+                "ほむら「ひゃっ！？ 今の音……２階からですか？」",
+                "冴島「……林のおっさんは『２階には絶対に上がるな』と言っていたが。」",
+                "冴島「さすがに泥棒が入ってるのを無視するわけにはいかないな。」"
+            ],
+            nextScene: "act3_noise_2f_commands"
+        },
+        "act3_noise_2f_commands": {
+            bgId: "bg_simple_living",
+            charId: "ch_homura_jersey",
+            text: [],
+            commands: [
+                { label: "２階へ向かう", target: "act3_room2f_dark" },
+                { label: "ほむらに待機を命じる", target: "act3_homura_wait" }
+            ]
+        },
+        "act3_homura_wait": {
+            bgId: "bg_simple_living",
+            charId: "ch_homura_jersey",
+            text: [
+                "冴島「お前はここで待ってろ。危ないからな。」",
+                "ほむら「えー！ 私も探偵助手として行きますよ！」",
+                "冴島「……言うことを聞かないやつだ。俺の後ろから離れるなよ。」"
+            ],
+            nextScene: "act3_room2f_dark"
+        },
+        "act3_room2f_dark": {
+            bgId: "bg_room2f_dark",
+            bgm: "bgm_search",
+            text: [
+                "足音を忍ばせながら２階の部屋の扉を開ける。",
+                "冴島「……真っ暗だな。それに、開いた窓から夜風が吹き込んでいる。」",
+                "ほむら「誰かいるんでしょうか……？」",
+                "冴島「静かに。少し中を探ってみよう。」"
+            ],
+            onLoad: () => {
+                state.flags.checked2fWindow = false;
+                state.flags.checked2fRoom = false;
+            },
+            nextScene: "act3_room2f_dark_commands"
+        },
+        "act3_room2f_dark_commands": {
+            bgId: "bg_room2f_dark",
+            text: [],
+            commands: [
+                { label: "窓を調べる", target: "act3_2f_window", condition: () => true },
+                { label: "部屋を調べる", target: "act3_2f_room", condition: () => true },
+                { label: "机の下を調べる", target: "act3_2f_desk", condition: () => state.flags.checked2fWindow && state.flags.checked2fRoom }
+            ]
+        },
+        "act3_2f_window": {
+            bgId: "bg_room2f_dark",
+            text: [
+                "冴島「窓が大きく開いている。ここから侵入した、あるいは逃げた後かもしれないな。」"
+            ],
+            onLoad: () => { state.flags.checked2fWindow = true; },
+            nextScene: "act3_room2f_dark_commands"
+        },
+        "act3_2f_room": {
+            bgId: "bg_room2f_dark",
+            text: [
+                "冴島「暗くてよく見えないが、棚や引き出しが漁られたような形跡がある。」"
+            ],
+            onLoad: () => { state.flags.checked2fRoom = true; },
+            nextScene: "act3_room2f_dark_commands"
+        },
+        "act3_2f_desk": {
+            bgId: "bg_room2f_dark",
+            text: [
+                "冴島「ん……？ 部屋の隅にある大きな机の下。」",
+                "暗がりの中、机の下にうずくまるような丸い『お尻』が見える。",
+                "冴島（まだ逃げずに隠れてやがったか……。）"
+            ],
+            onLoad: () => {
+                state.flags.checked2fVoice = false;
+                state.flags.checked2fTouch = false;
+            },
+            nextScene: "act3_2f_desk_commands"
+        },
+        "act3_2f_desk_commands": {
+            bgId: "bg_room2f_dark",
+            text: [],
+            commands: [
+                { label: "声をかける", target: "act3_call_out", condition: () => true },
+                { label: "お尻を触る", target: "act3_touch_butt", condition: () => true },
+                { label: "明かりを点ける", target: "act3_turn_on_light", condition: () => state.flags.checked2fVoice && state.flags.checked2fTouch }
+            ]
+        },
+        "act3_call_out": {
+            bgId: "bg_room2f_dark",
+            text: [
+                "冴島「おい、そこで何してる？ 観念して出てきな。」",
+                "……。",
+                "返事はない。ピクリとも動かない。",
+                "冴島（完全に居留守を決め込んでるのか……？）"
+            ],
+            onLoad: () => { state.flags.checked2fVoice = true; },
+            nextScene: "act3_2f_desk_commands"
+        },
+        "act3_touch_butt": {
+            bgId: "bg_room2f_dark",
+            text: [
+                "冴島（とりあえず、捕まえておくか……ぽふっ）",
+                "机の下の人物がビクッと跳ねたが、必死に声を殺しているようだ。",
+                "冴島（無反応を装っているが、確実に人間だな。それに、なんだかジャージみたいな感触がするぞ？）",
+                "ほむら「せ、先生！？ さすがにセクハラは犯罪ですよ！」",
+                "冴島「バカ言え。捕まえようとしただけだ。」"
+            ],
+            onLoad: () => { state.flags.checked2fTouch = true; },
+            nextScene: "act3_2f_desk_commands"
+        },
+        "act3_turn_on_light": {
+            bgId: "bg_room2f_light",
+            text: [
+                "パチッ。",
+                "俺は壁のスイッチを押し、部屋の明かりを点けた。",
+                "そこには……机の下で必死に身を丸めている、ジャージ姿のお尻が丸見えになっていた。",
+                "ほむら「あ、あれ……？ 人のお尻ですよね？」",
+                "冴島「……しっ。ほむら嬢、あれはきっとこの家に伝わる珍しいオブジェだ。触らぬ神に祟りなし、まずは他の場所を調べよう。」",
+                "ほむら「えぇ……？」",
+                "机の下のオブジェが、ピクッと震えた。"
+            ],
+            onLoad: () => {
+                state.flags.checkedBed = false;
+                state.flags.checkedCloset = false;
+                state.flags.checkedButtAgain = false;
+            },
+            nextScene: "act3_light_search_commands"
+        },
+        "act3_light_search_commands": {
+            bgId: "bg_room2f_light",
+            text: [],
+            commands: [
+                { label: "ベッドを調べる", target: "act3_search_bed", condition: () => true },
+                { label: "クローゼットを調べる", target: "act3_search_closet", condition: () => true },
+                { label: "オブジェ(尻)を触る", target: "act3_touch_butt_again", condition: () => true },
+                { label: "ほむらのツッコミ", target: "act3_homura_spank", condition: () => state.flags.checkedBed && state.flags.checkedCloset && state.flags.checkedButtAgain }
+            ]
+        },
+        "act3_search_bed": {
+            bgId: "bg_room2f_light",
+            text: [
+                "冴島「ベッドの下には……誰もいないな。ただの埃だらけだ。」",
+                "机の下のオブジェが、なぜかプルプルと震えている。"
+            ],
+            onLoad: () => { state.flags.checkedBed = true; },
+            nextScene: "act3_light_search_commands"
+        },
+        "act3_search_closet": {
+            bgId: "bg_room2f_light",
+            text: [
+                "冴島「クローゼットの中は……服が乱雑に詰め込まれているだけだ。ここもハズレか。」",
+                "机の下のオブジェから、かすかに歯ぎしりのような音が聞こえる。"
+            ],
+            onLoad: () => { state.flags.checkedCloset = true; },
+            nextScene: "act3_light_search_commands"
+        },
+        "act3_touch_butt_again": {
+            bgId: "bg_room2f_light",
+            text: [
+                "冴島「どれどれ、このオブジェはなかなか弾力があるな……ぽふっ。」",
+                "机の下のオブジェ「んぐぅっ……！」",
+                "冴島「おや、音が鳴るギミック付きか。よくできてる。」",
+                "ほむら「先生、絶対わざとやってますよね！？」"
+            ],
+            onLoad: () => { state.flags.checkedButtAgain = true; },
+            nextScene: "act3_light_search_commands"
+        },
+        "act3_homura_spank": {
+            bgId: "bg_room2f_light",
+            charId: "ch_homura_jersey",
+            text: [
+                "ほむら「もうっ！ 先生ふざけないでください！ これどう見ても不審者じゃないですか！」",
+                "バシィッ！！",
+                "冴島「おっと。」",
+                "ほむらが容赦なく、机の下のお尻を平手で思い切り叩いた。",
+                "？？？「ひゃあんっ！？」",
+                "ゴガンッ！！",
+                "？？？「いったぁーい！！」",
+                "驚いた不審者が跳ね上がり、机の裏に思い切り頭をぶつけた。そして、涙目で這い出てきた。"
+            ],
+            nextScene: "act3_reveal_yui_intro"
+        },
+        "act3_reveal_yui_intro": {
+            bgId: "bg_room2f_searched",
+            charId: "ch_yui_jersey_glasses",
+            text: [
+                "明かりの下に現れたのは、牛乳瓶の底のような分厚いメガネに、芋くさいジャージ姿の女だった。",
+                "ほむら「あ！ あなたも泥棒ですか！？」",
+                "？？？「ち、違います！ 私は通りすがりの……夜のパトロールをする正義の味方……痛たたっ……」",
+                "冴島「そのセリフ、さっき下の階で聞いたぞ。それにその変装……」",
+                "俺は女の顔から分厚いメガネをひょいっと奪い取った。"
+            ],
+            nextScene: "act3_reveal_yui"
+        },
+        "act3_reveal_yui": {
+            bgId: "bg_room2f_searched",
+            charId: "ch_yui_jersey",
+            text: [
+                "冴島「やっぱり橘先生じゃないか。なんで２人して同じような変装してるんだよ、呆れるぜ。」",
+                "橘「あっ！ 返しなさい！」",
+                "橘「……って、ほむらさん！？ なんであなたまでこんな所に……しかも同じようなジャージ着て……」",
+                "ほむら「えっ！？ 橘先生！？ どうして泥棒なんて……！」",
+                "橘「だから泥棒じゃありません！ 私は独自の調査を……」",
+                "冴島「まあ落ち着け。状況を整理しようじゃないか。」"
+            ],
+            onLoad: () => {
+                state.flags.talkedJersey = false;
+                state.flags.talkedGlasses = false;
+                state.flags.talkedPurpose = false;
+            },
+            nextScene: "act3_comic_talk_commands"
+        },
+        "act3_comic_talk_commands": {
+            bgId: "bg_room2f_searched",
+            charId: "ch_yui_jersey",
+            text: [],
+            commands: [
+                { label: "ジャージについて", target: "act3_talk_jersey", condition: () => true },
+                { label: "メガネについて", target: "act3_talk_glasses", condition: () => true },
+                { label: "目的について", target: "act3_talk_purpose", condition: () => true },
+                { label: "部屋の違和感", target: "act3_notice_anomaly", condition: () => state.flags.talkedJersey && state.flags.talkedGlasses && state.flags.talkedPurpose }
+            ]
+        },
+        "act3_talk_jersey": {
+            bgId: "bg_room2f_searched",
+            charId: "ch_yui_jersey",
+            text: [
+                "冴島「しかし、見事なペアルックだな。学校指定のダサいジャージ。」",
+                "橘「夜の潜伏には動きやすくて目立たない格好が最適なのよ！ 探偵ならわかるでしょ！」",
+                "ほむら「ですよね！ さすが橘先生、わかってらっしゃる！」",
+                "冴島「……妙なところで意気投合するなよ。」"
+            ],
+            onLoad: () => { state.flags.talkedJersey = true; },
+            nextScene: "act3_comic_talk_commands"
+        },
+        "act3_talk_glasses": {
+            bgId: "bg_room2f_searched",
+            charId: "ch_yui_jersey",
+            text: [
+                "冴島「それに、その牛乳瓶の底みたいなメガネ。まさかこれも……」",
+                "橘「素顔を隠すための完璧な変装よ！ 暗闇でも視野が……」",
+                "ほむら「視野が狭くなって余計に見えなくなりますよね！ わかります！」",
+                "冴島「（ポンコツが２人に増えただけじゃないか……）」"
+            ],
+            onLoad: () => { state.flags.talkedGlasses = true; },
+            nextScene: "act3_comic_talk_commands"
+        },
+        "act3_talk_purpose": {
+            bgId: "bg_room2f_searched",
+            charId: "ch_yui_jersey",
+            text: [
+                "冴島「で、時計塔の罰掃除はどうした？ こんなところでまた探し物ですか？」",
+                "橘「……ええ。あの外交官の家から盗まれたメダル……それと対になる『ある物』が、この家にあるという情報を得たのよ。」",
+                "冴島「林の家に？ なるほど、あのおっさん、単なる依頼人じゃなかったわけか。」"
+            ],
+            onLoad: () => { state.flags.talkedPurpose = true; },
+            nextScene: "act3_comic_talk_commands"
+        },
+        "act3_notice_anomaly": {
+            bgId: "bg_room2f_searched",
+            charId: "ch_yui_jersey",
+            bgm: "bgm_tension",
+            text: [
+                "冴島「それにしても……」",
+                "俺は改めて、明かりに照らされた部屋の中を見回した。",
+                "橘「何か見つけたの？」",
+                "冴島「待てよ。この部屋、なんだかおかしいな。」",
+                "ほむら「おかしいって……綺麗に片付いてますけど？」",
+                "冴島「いや、空間の広さが合わない。１階から見た外観のサイズと、この部屋の奥行き……それに、あの壁際の不自然な段差。」",
+                "冴島「林のおっさんが『絶対に２階に上がるな』と言った本当の理由……。何か隠されたギミックがあるはずだ。」"
+            ],
+            nextScene: "act3_tobecontinued"
+        },
+        "act3_tobecontinued": {
+            bgId: "bg_room2f_searched",
+            charId: "ch_yui_jersey",
             text: [
                 "To Be Continued..."
             ],
-            nextScene: "act2_end_commands"
+            nextScene: "act3_end_commands"
         },
-        "act2_end_commands": {
-            bgId: "bg_shiori_house",
-            text: [],
-            commands: [
-                { label: "セーブ", action: "open_save" },
-                { label: "ロード", action: "open_load" },
-                { label: "スタートへ", action: "back_to_start" }
-            ]
-        },
+
         // --- ゲームオーバー処理 ---
         "game_over": {
             bgId: "ev_kidnap",
@@ -1644,7 +2475,6 @@
             
             const config = openingState.images[openingState.currentIndex];
 
-            // フェードアウト時間が0の場合、次のフェードイン時に前の画像を背景に描画してクロスフェードにする
             if (openingState.currentIndex > 0 && openingState.phase === 0) {
                 const prevConfig = openingState.images[openingState.currentIndex - 1];
                 if (prevConfig.out === 0 && imageCache[prevConfig.id] && imageCache[prevConfig.id].complete) {
@@ -1717,9 +2547,9 @@
             if (state.sceneId === "system_menu" || state.sceneId.startsWith("sys_")) {
                 ctx.fillStyle = "#888";
                 ctx.font = "bold 16px sans-serif";
-                ctx.textAlign = "right";
+                ctx.textAlign = "left"; 
                 ctx.textBaseline = "middle";
-                ctx.fillText(GAME_VERSION, win.x + win.w - 159, win.y + 65);
+                ctx.fillText(GAME_VERSION, win.x + 555, win.y + 40); 
                 ctx.textBaseline = "alphabetic"; 
             }
 
@@ -1749,7 +2579,7 @@
                 ctx.fillStyle = "#fff";
                 ctx.font = "26px 'ヒラギノ明朝 ProN', 'MS P明朝', serif"; 
                 
-                if (state.sceneId === "game_over" || state.sceneId === "act2_tobecontinued") {
+                if (state.sceneId === "game_over" || state.sceneId.includes("tobecontinued")) {
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.shadowColor = "#000";
@@ -1796,6 +2626,12 @@
                     ctx.textBaseline = "alphabetic";
                 });
             }
+        }
+
+        // トランジション（黒フェード）の描画
+        if (transitionState.active) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${transitionState.alpha})`;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
         }
 
         // 4. ログ画面の描画（透過して上に重ねる）
@@ -1850,6 +2686,38 @@
         const now = Date.now();
         const dt = now - lastFrameTime;
         lastFrameTime = now;
+
+        if (transitionState.active) {
+            transitionState.timer += dt;
+            if (transitionState.phase === 0) {
+                transitionState.alpha += dt / 1000; 
+                if (customBgmAudio && !customBgmAudio.paused && currentBgmKey !== "stop") {
+                    let v = 0.5 * (1 - transitionState.alpha);
+                    if (v < 0) v = 0;
+                    customBgmAudio.volume = v;
+                }
+                if (transitionState.alpha >= 1) {
+                    transitionState.alpha = 1;
+                    transitionState.phase = 1;
+                    transitionState.timer = 0;
+                    if (customBgmAudio) customBgmAudio.pause();
+                }
+            } else if (transitionState.phase === 1) {
+                if (transitionState.timer >= 500) {
+                    transitionState.phase = 2;
+                    transitionState.timer = 0;
+                    loadScene(transitionState.nextScene);
+                    state.uiVisible = true;
+                }
+            } else if (transitionState.phase === 2) {
+                transitionState.alpha -= dt / 1000; 
+                if (transitionState.alpha <= 0) {
+                    transitionState.alpha = 0;
+                    transitionState.active = false;
+                }
+            }
+            return;
+        }
 
         if (titleState.active) {
             titleState.timer += dt;
@@ -2059,6 +2927,8 @@
         activeBtnAction = null;
         activeBtnTarget = null;
         activeButtonType = null;
+
+        if (transitionState.active) return;
         
         if (state.sceneId === "tap_to_start") {
             if (!hasInteracted) hasInteracted = true;
@@ -2146,6 +3016,7 @@
 
     canvas.addEventListener('pointermove', (e) => {
         if (!isPointerDown) return;
+        if (transitionState.active) return;
 
         const pos = getPointerPos(e);
 
@@ -2186,6 +3057,7 @@
     canvas.addEventListener('pointerup', (e) => {
         isPointerDown = false;
         
+        if (transitionState.active) return;
         if (titleState.active) return;
         if (openingState.active) return;
 
@@ -2336,6 +3208,28 @@
         isDraggingLog = false;
         activeButtonType = null;
     });
+
+    // --- 開発用シーンジャンプ ---
+    window.jumpToScene = function() {
+        const select = document.getElementById('dev-scene-select');
+        const sceneId = select.value;
+        
+        titleState.active = false;
+        openingState.active = false;
+        transitionState.active = false;
+        state.uiVisible = true;
+        state.showLog = false;
+        stateBackup = null;
+        state.flags = {}; 
+        
+        if (customBgmAudio) customBgmAudio.pause();
+        currentBgmKey = "stop";
+        isBgmPlaying = false;
+
+        loadScene(sceneId);
+        
+        document.getElementById('dev-tools').style.display = 'none';
+    };
 
     window.onload = () => {
         loadScene("tap_to_start"); 
